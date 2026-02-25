@@ -1,0 +1,162 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %} Credits {% endblock %}
+{% block content %}
+{% include "menti/mentee_sidebar.html" %}
+<div id="wrapper" class="d-flex active">
+    <div id="page-content" class="flex-grow-1">
+        <main role="main" class="container py-5">
+            <div class="d-flex align-items-center mb-4">
+                <h2 class="text-white p-3 bg-black rounded">
+                    <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                        <i id="sidebarIcon" class="bi bi-list"></i>
+                    </a>Developing Team
+                </h2>
+            </div>
+            <div class="content-section">
+              <div class="container mt-3">
+                <!-- Team List -->
+                <div class="team-list">
+                  <div class="team-member">
+                    <span class="fw-bold">• Swayam Shah</span>
+                    <span class="text-muted">Student | BE(IT) Div C | Apsit</span>
+                  </div>
+                  <div class="team-member">
+                    <span class="fw-bold">• Zahra Surve</span>
+                    <span class="text-muted">Student | BE(IT) Div C | Apsit</span>
+                  </div>
+                  <div class="team-member">
+                    <span class="fw-bold">• Urvija Sawant</span>
+                    <span class="text-muted">Student | BE(IT) Div C | Apsit</span>
+                  </div>
+                  <div class="team-member">
+                    <span class="fw-bold">• Purav Shah</span>
+                    <span class="text-muted">Student | BE(IT) Div C | Apsit</span>
+                  </div>
+                  <div class="team-member">
+                    <span class="fw-bold">• Dr. Kiran Deshpande</span>
+                    <span class="text-muted">HOD Information Technology | Apsit</span>
+                  </div>
+                  <div class="team-member">
+                    <span class="fw-bold">• Project Guide: Ms. Sujata Oak</span>
+                    <span class="text-muted">Faculty Information Technology | Apsit</span>
+                  </div>
+                  <div class="team-member">
+                    <span class="fw-bold">• Project Co-Guide: Ms. Randeep Kahlon</span>
+                    <span class="text-muted">Faculty Information Technology | Apsit</span>
+                  </div>
+                  <div class="team-member">
+                    <span class="fw-bold">• Project Co-ordinator: Mr. Vishal Badgujar</span>
+                    <span class="text-muted">Faculty Information Technology | Apsit</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </main>
+    </div>
+</div>
+<style>
+/* Dropdown toggle icon animation */
+.toggle-icon {
+    transition: transform 0.3s ease-in-out;
+}
+a[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.slide-toggle {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease; /* smooth slide */
+}
+
+.slide-toggle.show {
+    max-height: 800px; /* set bigger than your form height */
+}
+
+/* Content wrapper */
+#page-content {
+  transition: margin-left 0.3s ease;
+  margin-left: 0;
+}
+
+/* When active, sidebar visible and content slides */
+#wrapper.active .sidebar {
+  left: 0;
+}
+
+#wrapper.active #page-content {
+  margin-left: 250px;
+}
+
+/* Page content */
+#page-content {
+  transition: margin-left 0.3s ease-in-out;
+  margin-left: 250px; /* open by default */
+}
+
+/* Sidebar default */
+.sidebar {
+  width: 250px;
+  position: fixed;
+  top: 56px;
+  left: 0;
+  height: calc(100vh - 56px);
+  transition: left 0.3s ease-in-out;
+  z-index: 1050;
+}
+
+/* Closed state */
+#wrapper:not(.active) .sidebar {
+  left: -250px;
+}
+
+#wrapper:not(.active) #page-content {
+  margin-left: 0;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  #page-content {
+    margin-left: 0 !important;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    left: 0;
+  }
+
+  #wrapper.active .sidebar {
+    transform: translateX(0);
+  }
+}
+
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.team-member {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e6a5a5; /* subtle pinkish border */
+}
+
+.team-member:last-child {
+  border-bottom: none; /* remove last border */
+}
+
+.team-member span {
+  font-size: 1rem;
+}
+
+span.text-muted {
+    color: #fff !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'menti/base.html' %}
+{% load humanize %}
+
+{% block content %}
+
+
+
+
+ <h2>Search Results</h2>
+
+ <div class="row">
+        <div class="col-md-10">
+ <div class="content-section">
+
+
+
+     {% if queryset %}
+
+
+     {% for user in queryset %}
+
+     <div class="content-section">
+      <div class="media">
+         <img class="rounded-circle account-img" src="{{ user.profile.image.url }}">
+         <div class="media-body">
+            <h2 class="account-heading">{{ user.username }}</h2>
+            <p class="text-secondary">{{ user.email }}</p>
+              <p class="text-secondary">{{ user.profile.education }}</p>
+              <a class="btn btn-info btn-sm" href="{% url 'profile-detail2' pk=user.pk %}">View profile</a>
+         </div>
+      </div>
+
+   </div>
+
+     {% endfor %}
+
+     {% else %}
+
+     <p>There is no such User</p>
+
+     {% endif %}
+
+
+ </div>
+        </div>
+ </div>
+
+
+{% endblock %}

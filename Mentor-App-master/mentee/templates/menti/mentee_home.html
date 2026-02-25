@@ -1,0 +1,117 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+{% block title %} Home {% endblock %}
+{% block content %}
+<style>
+    body {
+        /* Gradient background */
+        color: #212529;
+        min-height: 100vh;
+    }
+
+    .profile-card {
+        background: #000;
+        color: #fff;
+        backdrop-filter: blur(8px); /* Frosted glass effect */
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .profile-card:hover {
+        transform: translateY(-5px); /* Lift effect on hover */
+    }
+    p.text-muted {
+        color: #fff !important;
+    }
+</style>
+<br>
+{% if notifications %}
+<div class="container mb-3">
+    {% for note in notifications %}
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm">
+        {{ note.message }}
+        <a href="{% url 'mark_notification_read' note.id %}" class="btn btn-sm btn-success float-end">
+            Mark as Read
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% if profile_incomplete %}
+<div class="container mb-3">
+    <div class="alert alert-danger shadow-sm">
+        <strong>⚠ Profile Incomplete</strong><br>
+        Please complete your profile to avoid issues during evaluation.
+        <a href="{% url 'profile' %}" class="btn btn-sm btn-light ms-2">
+            Complete Now
+        </a>
+    </div>
+</div>
+{% endif %}
+
+
+<div class="container d-flex justify-content-center align-items-center mt-5">
+    <div class="card profile-card p-4" style="max-width: 450px; width: 100%;">
+
+        <!-- Profile Image -->
+        <div class="text-center">
+            <img src="{{ profile.image.url }}"
+                 class="rounded-circle shadow-sm border border-3 border-light"
+                 style="width: 160px; height: 160px; object-fit: cover;">
+        </div><br>
+
+        <!-- User Info -->
+        <div class="card-body text-center">
+            {% if profile %}
+                <h3 class="fw-bold mb-1">
+                    {{ profile.student_name|default:user.username }}
+                </h3>
+                <p class="text-muted mb-3">{{ profile.about_me|default:"No information available" }}</p>
+
+                <div class="text-start text-center px-4">
+                    <p><strong>Year:</strong> {{ profile.year|default:"-" }}</p>
+                    <p><strong>Branch:</strong> {{ profile.branch|default:"-" }}</p>
+                </div>
+            {% else %}
+                <h3 class="fw-bold mb-1">Guest User</h3>
+                <p class="text-muted mb-3">Please log in to see your profile.</p>
+            {% endif %}
+        </div>
+
+    </div>
+    {% if document_summary %}
+    <div class="container mb-4" style="max-width: 650px; width: 100%;">
+        <div class="card shadow-sm border-warning bg-black bg-opacity-75 text-light p-0">
+            <div class="card-header text-warning fw-bold">
+                <h5 class="fw-bold mb-2">
+                    📌 Recent Upload Summary
+                </h5>
+                <p class="text-muted mb-3" style="color: #fff !important;">
+                    Academic Year: <strong>{{ academic_year }}</strong>
+                    (Last 30 days)
+                </p>
+                <hr>
+                <ul class="list-group list-group-flush">
+                    {% for category, count in document_summary.items %}
+                        <li class="list-group-item d-flex justify-content-between bg-black text-light">
+                            {{ category }}
+                            <span class="badge bg-primary rounded">
+                                {{ count }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+<!-- Next Button -->
+        <div class="text-center mt-3">
+            <a href="{% url 'profile' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm">
+                Next <i class="bi bi-arrow-right-circle"></i>
+            </a>
+        </div>
+<br>
+{% endblock %}

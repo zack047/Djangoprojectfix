@@ -1,0 +1,26 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %} Forgot Password {% endblock %}
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <form method="post" class="form shadow p-4 bg-light rounded">
+        {% csrf_token %}
+        <h4 class="mb-4 text-center">Forgot Password</h4>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-info">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="form-group mb-3">
+            <label for="username"> Username</label>
+            <input type="text" name="username"  class="form-control" placeholder="Enter your Username" required>
+        </div>
+
+        <div class="text-center">
+            <button class="btn btn-primary w-100" type="submit">Send Reset Link</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

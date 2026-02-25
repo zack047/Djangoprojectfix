@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+
+      <link rel="stylesheet" type="text/css" href="{% static 'mentee/main.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'mentee/style.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap-grid.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap-reboot.css' %}">
+      <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
+
+    <title>MentorConnect</title>
+    <style>
+        /* ------------------------------
+           GLOBAL BACKGROUND (DARK GRADIENT)
+        ------------------------------- */
+        body {
+          min-height: 100vh;
+          margin: 0;
+          background: radial-gradient(circle at top, #0f172a, #020617);
+          font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+          color: #e5e7eb;
+        }
+
+        /* ------------------------------
+           NAVBAR (GLASS + GLOW)
+        ------------------------------- */
+        .navbar-custom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 28px;
+          background: linear-gradient(135deg, #020617, #1e293b);
+          color: #ffffff;
+          font-size: 18px;
+          font-weight: 700;
+          letter-spacing: 0.4px;
+          box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+          position: sticky;
+          top: 0;
+          z-index: 1050;
+          overflow: hidden;
+        }
+
+        /* Glass overlay */
+        .navbar-custom::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          pointer-events: none;
+        }
+
+        /* ------------------------------
+           NAVBAR SECTIONS
+        ------------------------------- */
+        .navbar-left,
+        .navbar-center,
+        .navbar-right {
+          z-index: 1;
+        }
+
+        .navbar-left {
+          display: flex;
+          align-items: center;
+        }
+
+        .navbar-left img {
+          height: 44px;
+          filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.6));
+          transition: transform 0.3s ease;
+        }
+
+        .navbar-left img:hover {
+          transform: scale(1.1) rotate(-2deg);
+        }
+
+        .navbar-center {
+          flex-grow: 1;
+          text-align: center;
+          font-weight: 800;
+          font-size: 1.15rem;
+          line-height: 1.3;
+          color: #f8fafc;
+        }
+
+        /* ------------------------------
+           NAVBAR LINKS
+        ------------------------------- */
+        .navbar-right {
+          display: flex;
+          gap: 18px;
+          align-items: center;
+        }
+
+        .navbar-right a {
+          color: #e5e7eb;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          text-decoration: none;
+          padding: 8px 16px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.05);
+          transition: all 0.25s ease;
+        }
+
+        .navbar-right a:hover {
+          background: linear-gradient(135deg, #6366f1, #3b82f6);
+          color: #ffffff;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 22px rgba(99, 102, 241, 0.5);
+        }
+
+        /* ------------------------------
+           DARK AESTHETIC JUMBOTRON
+        ------------------------------- */
+        .jumbotron {
+          background: #020617; /* deep slate black */
+          border-radius: 28px;
+          padding: 4rem 3rem;
+          border: 1px solid rgba(99, 102, 241, 0.25);
+
+          box-shadow:
+            0 30px 70px rgba(0, 0, 0, 0.85),
+            0 0 50px rgba(99, 102, 241, 0.15);
+
+          max-width: 1000px;
+          margin: 80px auto;
+        }
+
+        /* ------------------------------
+           TEXT STYLING
+        ------------------------------- */
+        .jumbotron h1 {
+          color: #f8fafc;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+        }
+
+        .jumbotron .lead {
+          color: #c7d2fe;
+          font-size: 1.1rem;
+          line-height: 1.8;
+        }
+
+        /* ------------------------------
+           DIVIDERS (GLOW LINE)
+        ------------------------------- */
+        .jumbotron hr {
+          border: none;
+          height: 1px;
+          background: linear-gradient(
+            to right,
+            transparent,
+            rgba(99, 102, 241, 0.9),
+            transparent
+          );
+          margin: 2rem 0;
+        }
+
+        /* ------------------------------
+           BUTTONS (GLOW EFFECT)
+        ------------------------------- */
+        .jumbotron .btn-primary {
+          background: linear-gradient(135deg, #4f46e5, #6366f1);
+          border: none;
+          border-radius: 999px;
+          padding: 14px 36px;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          box-shadow: 0 12px 30px rgba(99, 102, 241, 0.6);
+          transition: all 0.25s ease;
+        }
+
+        .jumbotron .btn-primary:hover {
+          transform: translateY(-3px) scale(1.05);
+          box-shadow: 0 18px 45px rgba(99, 102, 241, 0.85);
+        }
+    </style>
+
+  </head>
+
+  <body>
+
+  <header class="site-header">
+      <!-- College Name Header -->
+    <div class="navbar-custom">
+      <!-- Left: Logo -->
+      <div class="navbar-left">
+        <img style="width:65px; height:55px;" src="/media/logo.png" alt="Logo">
+      </div>
+
+      <!-- Center: Text -->
+      <div class="navbar-center text-center">
+        Parshvanath Charitable Trust's <br>
+        <strong>A P Shah Institute of Technology, Thane</strong>
+      </div>
+
+      <!-- Right: Links -->
+      <div class="navbar-right d-flex">
+        <a class="nav-item nav-link text-white" href="{% url 'home' %}">Home</a>
+      </div>
+    </div>
+    </header>
+
+<div class="container">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert
+            {% if message.tags == 'error' %}alert-danger
+            {% elif message.tags == 'success' %}alert-success
+            {% else %}alert-info{% endif %}
+            alert-dismissible fade show text-center fw-bold" role="alert">
+
+          {{ message }}
+
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% block content %} {% endblock %}
+</div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+  <script src="{% static 'js/bootstrap.js' %}"></script>
+  <script src="{% static 'js/bootstrap.bundle.js' %}"></script>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const logoutLink = document.querySelector('#logout-link');
+  if (logoutLink) {
+    logoutLink.addEventListener('click', function (e) {
+      e.preventDefault(); // prevent default GET request
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = this.href;
+
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+
+      document.body.appendChild(form);
+      form.submit();
+    });
+  }
+});
+</script>
+  </body>
+</html>

@@ -1,0 +1,68 @@
+{% extends 'menti/base.html' %}
+{% load humanize %}
+{% block title %} Your Conversations {% endblock %}
+{% block content %}
+<br>
+<div class="row">
+    <div class="col-md-12">
+        <div class="content-section">
+        <h2>Your Conversations</h2>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                      <tr>
+                          <th>Sr. No.</th>
+                          <th>From</th>
+                          <th>Conversation</th>
+                          <th>Time</th>
+                          <th>View Chat</th>
+                      </tr>
+                    </thead>
+                <tbody>
+                {% if conversation %}
+                <ol>
+                {% for conv in conversation %}
+                    <tr>
+                        <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                        <td>{{ conv.sender }}</td>
+                        <td>{{ conv.conversation }}</td>
+                        <td>{{ conv.sent_at|naturaltime }}</td>
+                        <td> <a class="btn btn-primary btn-sm" href="{% url 'conv2-reply' pk=conv.pk %}">View Chat</a></td>
+                    </tr>
+                {% endfor %}
+                </ol>
+                {% else %}
+                <p>There Are no Chats Available</p>
+                {% endif %}
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% if is_paginated %}
+{% if page_obj.has_previous %}
+<a class="btn btn-outline-info mb-4" href="?page=1">First</a>
+<a class="btn btn-outline-info mb-4" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+{% endif %}
+
+{% for num in page_obj.paginator.page_range %}
+{% if page_obj.number == num %}
+<a class="btn btn-info mb-4" href="?page={{ num }}">{{ num }}</a>
+{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+<a class="btn btn-outline-info mb-4" href="?page={{ num }}">{{ num }}</a>
+{% endif %}
+{% endfor %}
+
+{% if page_obj.has_next %}
+<a class="btn btn-outline-info mb-4" href="?page={{ page_obj.next_page_number }}">Next</a>
+<a class="btn btn-outline-info mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+{% endif %}
+{% endif %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+    <a href="{% url 'module-message' %}"
+       class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+        <i class="bi bi-arrow-left-circle"></i> Back
+    </a>
+</div>
+{% endblock %}

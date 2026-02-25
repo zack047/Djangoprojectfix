@@ -1,0 +1,33 @@
+{% extends 'menti/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+
+<br><br><br>
+<section>
+
+    <h1>Write Your Reply</h1>
+
+     <div class="content-section">
+
+
+        <form method="POST">
+            {% csrf_token %}
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">Reply Your Message</legend>
+                {{ form|crispy }}
+
+            </fieldset>
+            <div class="form-group">
+                <button class="btn btn-outline-info" type="submit" value="save">Send Your Message</button>
+            </div>
+        </form>
+
+
+    </div>
+</section>
+
+
+{% endblock %}
+

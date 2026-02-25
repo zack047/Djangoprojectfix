@@ -1,0 +1,30 @@
+{% extends 'menti/base.html' %}
+{% load crispy_forms_tags %}
+
+
+{% block content %}
+
+
+</br>
+<div class="row">
+        <div class="col-md-10">
+ <div class="content-section">
+
+
+       <form class="form-inline" action="{% url 'search-user' %}">
+    <input class="form-control mr-sm-2 col-md-10" type="search" name="q" placeholder="Search" aria-label="Search">
+    <button class="btn btn-outline-success my-2 my-lg-4" type="submit">Search</button>
+
+
+       </form>
+
+ </div>
+        </div>
+</div>
+
+
+
+
+
+
+{% endblock %}

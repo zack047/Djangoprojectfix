@@ -1,0 +1,954 @@
+{% extends "mentor/base1.html" %}
+{% load static %}
+{% block title %}Mentor–Mentee Interaction{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="fw-bold mb-0 text-light">Mentor–Mentee Interaction</h2>
+      <small class="text-muted" style="color:#ffffff !important;">Record interactions and attendance for your mentees.</small>
+    </div>
+    <button class="btn btn-warning fw-semibold mt-3 mt-md-0"
+            data-bs-toggle="modal" data-bs-target="#interactionModal">
+      <i class="bi bi-plus-circle me-1"></i> Add Interaction
+    </button>
+  </div>
+
+    <!-- Export Buttons -->
+<div class="mb-3 d-flex gap-2 flex-wrap">
+  <a href="{% url 'export_interactions' 'excel' %}" class="btn btn-outline-success">
+    <i class="bi bi-file-earmark-excel"></i> Export Excel
+  </a>
+  <a href="{% url 'export_interactions' 'pdf' %}" class="btn btn-outline-danger">
+    <i class="bi bi-file-earmark-pdf"></i> Export PDF
+  </a>
+</div>
+
+  <!-- Toast container (Bootstrap 5) -->
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+    {% for message in messages %}
+      <div class="toast align-items-center text-bg-{{ message.tags|default:'info' }} border-0 show mb-2"
+           role="alert">
+        <div class="d-flex">
+          <div class="toast-body">
+            {{ message }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+    <!-- Filter Form -->
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-3">
+    <label class="form-label fw-semibold text-light">Date</label>
+    <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label fw-semibold text-light">Semester</label>
+    <select name="semester" class="form-select">
+      <option value="">-- Select Semester --</option>
+      {% for s in semesters %}
+        <option value="{{ s }}" {% if request.GET.semester == s %}selected{% endif %}>
+          {{ s }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+      <label class="form-label fw-semibold text-light">Class</label>
+      <select name="class_year" class="form-select">
+        <option value="">-- Select Class --</option>
+        <option value="FE" {% if request.GET.class_year == "FE" %}selected{% endif %}>FE</option>
+        <option value="SE" {% if request.GET.class_year == "SE" %}selected{% endif %}>SE</option>
+        <option value="TE" {% if request.GET.class_year == "TE" %}selected{% endif %}>TE</option>
+        <option value="BE" {% if request.GET.class_year == "BE" %}selected{% endif %}>BE</option>
+      </select>
+  </div>
+
+  <div class="col-md-3">
+    <label class="form-label fw-semibold text-light">Actions</label>
+    <div class="d-flex gap-2">
+        <!-- Filter -->
+        <button class="btn btn-primary w-100">
+          <i class="bi bi-funnel"></i> Filter
+        </button>
+        <!-- Reset -->
+        <a href="{% url 'mentor_interaction' %}" class="btn btn-outline-light w-100">
+          <i class="bi bi-x-circle"></i> Reset
+        </a>
+    </div>
+  </div>
+</form>
+
+  <!-- Interactions table -->
+  <div class="card shadow-sm border-0 bg-black">
+    <div class="card-body p-0 bg-black">
+      <div class="table-responsive table-dark text-light">
+        <table class="table table-bordered table-hover mb-0 align-middle table-dark text-light">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="text-center">Date</th>
+              <th scope="col" class="text-center">Semester</th>
+              <th scope="col" class="text-center">Class</th>
+              <th scope="col" class="text-center">Agenda Discussed</th>
+              <th scope="col" class="text-center">Mentees Present</th>
+              <th scope="col" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if interactions %}
+              {% for i in interactions %}
+                <tr>
+                  <td class="text-center">{{ i.date|date:"d-m-Y" }}</td>
+                  <td class="text-center">{{ i.semester }}</td>
+                  <td class="text-center">{{ i.class_year }}</td>
+                  <td style="max-width: 350px;">
+                    <!-- ✅ Original Agenda -->
+                    <div class="small text-wrap">{{ i.agenda }}</div>
+                    <textarea id="agenda_text_{{ i.id }}" class="d-none">
+                    {{ i.agenda }}
+                    </textarea>
+                    <!-- ✅ AI Summary Toggle -->
+                      <button
+                          id="view_summary_btn_{{ i.id }}"
+                          class="btn btn-sm btn-outline-warning mt-2 {% if not i.ai_summary or not i.ai_summary_generated %}d-none{% endif %}"
+                          type="button"
+                          onclick="toggleSummary('{{ i.id }}')">
+                          <i class="bi bi-eye"></i> View AI Summary
+                        </button>
+
+                      <!-- ✅ Remove Button -->
+                        <button
+                          id="remove_summary_btn_{{ i.id }}"
+                          class="btn btn-sm btn-outline-danger mt-2 ms-1 {% if not i.ai_summary or not i.ai_summary_generated %}d-none{% endif %}"
+                          type="button"
+                          onclick="removeAISummary('{{ i.id }}')">
+                          <i class="bi bi-trash"></i> Remove AI Summary
+                        </button>
+
+                      <!-- ✅ Undo Button -->
+                        <button
+                          id="undo_summary_btn_{{ i.id }}"
+                          class="btn btn-sm btn-outline-info mt-2 ms-1 d-none"
+                          type="button"
+                          onclick="undoAISummary('{{ i.id }}')">
+                          <i class="bi bi-undo"></i> Undo
+                        </button>
+
+                        <div
+                          id="ai_summary_{{ i.id }}"
+                          class="text alert-warning small mt-2 text-start d-none">
+                          <b>AI Summary:</b>
+                          <ul class="mb-0 mt-1" id="ai_summary_list_{{ i.id }}">
+                            {% if i.ai_summary and i.ai_summary_generated %}
+                              {% for line in i.ai_summary.splitlines %}
+                                <li>{{ line|cut:"• " }}</li>
+                              {% endfor %}
+                            {% endif %}
+                          </ul>
+                        </div>
+                        <div class="progress mt-2 d-none" id="ai_progress_wrap_{{ i.id }}">
+                          <div class="progress-bar progress-bar-striped progress-bar-animated"
+                               id="ai_progress_{{ i.id }}"
+                               role="progressbar"
+                               style="width: 0%">0%</div>
+                        </div>
+
+                      <!-- ✅ Generate Button -->
+                      <button class="btn btn-sm btn-outline-secondary mt-2"
+                              onclick="regenerateAISummary('{{ i.id }}')">
+                        🔄 Generate
+                      </button>
+                  </td>
+                  <td style="max-width: 260px;" class="text-center">
+                    <ul class="list-unstyled mb-0 small">
+                      {% for u in i.mentees.all %}
+                        <li>
+                          {{ u.profile.student_name }} ({{ u.profile.moodle_id }})
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </td>
+                  <td class="text-center">
+                    <!-- ✅ EDIT (opens same modal) -->
+                      <button type="button"
+                              class="btn btn-outline-primary btn-sm edit-btn"
+                              data-id="{{ i.id }}"
+                              data-date="{{ i.date|date:'Y-m-d' }}"
+                              data-agenda="{{ i.agenda }}"
+                              data-mentees="{% for u in i.mentees.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                          <i class="bi bi-pencil-square"></i>
+                      </button>
+                    <a href="{% url 'delete_interaction' i.id %}" class="btn btn-outline-danger btn-sm"
+                       onclick="return confirm('Delete this interaction?')">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4" style="color: #fff !important;">
+                  No interactions recorded yet. Click <strong>Add Interaction</strong> to create one.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Paginator -->
+      {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-center mt-4">
+          <nav>
+            <ul class="pagination cyber-pagination">
+
+              <!-- Prev -->
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.previous_page_number }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.semester %}&semester={{ request.GET.semester }}{% endif %}{% if request.GET.class_year %}&class_year={{ request.GET.class_year }}{% endif %}">
+                    ‹
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">‹</span>
+                </li>
+              {% endif %}
+
+              <!-- Pages -->
+              {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                  <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                  </li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                  <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ num }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.semester %}&semester={{ request.GET.semester }}{% endif %}{% if request.GET.class_year %}&class_year={{ request.GET.class_year }}{% endif %}">
+                      {{ num }}
+                    </a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              <!-- Next -->
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ page_obj.next_page_number }}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}{% if request.GET.semester %}&semester={{ request.GET.semester }}{% endif %}{% if request.GET.class_year %}&class_year={{ request.GET.class_year }}{% endif %}">
+                    ›
+                  </a>
+                </li>
+              {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">›</span>
+                </li>
+              {% endif %}
+
+            </ul>
+          </nav>
+        </div>
+      {% endif %}
+  </div>
+    <!-- Attendance Percentage -->
+    <hr>
+<div class="card mt-4 shadow-sm border-0 p-0">
+  <div class="card-header fw-bold bg-light">
+    <i class="bi bi-person-check"></i> Attendance Percentage
+  </div>
+  <div class="table-responsive table-bordered">
+    <table class="table mb-0">
+      <tr>
+        <th class="text-center">Moodle ID</th>
+        <th class="text-center">Name</th>
+        <th class="text-center">Semester</th>
+        <th class="text-center">Year</th>
+        <th class="text-center">Department</th>
+        <th class="text-center">Attendance (%)</th>
+      </tr>
+      {% for a in attendance %}
+      <tr class="{% if a.percent < 50 %}table-danger{% endif %}">
+        <td class="text-center">{{ a.moodle }}</td>
+        <td>
+          {% if a.percent < 50 %}
+            <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>
+          {% endif %}
+          {{ a.name }}
+        </td>
+        <td class="text-center">{{ a.semester }}</td>
+        <td class="text-center">{{ a.year }}</td>
+        <td class="text-center">{{ a.branch }}</td>
+        <td class="text-center">
+          <span class="fw-semibold">
+            {{ a.present }} / {{ a.total }}
+          </span>
+          <br>
+          {% if a.percent >= 75 %}
+            <span class="badge bg-success mt-1">
+              {{ a.percent }}%
+            </span>
+          {% else %}
+            <span class="badge bg-danger mt-1">
+              {{ a.percent }}%
+            </span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted py-3">
+          No attendance data available.
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+<!-- ✅ Attendance Bar Graph -->
+    <hr>
+<div class="card mt-3 shadow-sm border-0 p-0">
+  <div class="card-header fw-bold">
+    <i class="bi bi-bar-chart"></i> Mentee Attendance Graph
+  </div>
+  <div class="card-body">
+    <canvas id="attendanceChart" height="120"></canvas>
+  </div>
+</div>
+    <!-- ✅ Monthly Attendance Graph -->
+    <hr>
+<div class="card mt-4 shadow-sm border-0 p-0">
+  <div class="card-header fw-bold">
+    <i class="bi bi-graph-up"></i> Monthly Attendance Trend
+  </div>
+  <div class="card-body">
+    <canvas id="monthlyChart" height="120"></canvas>
+  </div>
+</div>
+
+</div>
+
+<!-- Modal: Add Interaction -->
+<div class="modal fade" id="interactionModal" tabindex="-1" aria-labelledby="interactionModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <form method="post" id="interactionForm">
+        {% csrf_token %}
+        <input type="hidden" name="interaction_id" id="interaction_id">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="interactionModalLabel">
+            <i class="bi bi-chat-square-text me-2"></i>New Interaction
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <!-- Date -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Date</label>
+              <input type="date" name="date" class="form-control" required>
+            </div>
+
+            <!-- Semester & Class (Auto) -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Semester (Auto from mentee)</label>
+              <input type="text" id="autoSemester" class="form-control" readonly
+                     placeholder="Select mentees to auto-fill">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Class (Auto from mentee)</label>
+              <input type="text" id="autoClass" class="form-control" readonly
+                     placeholder="FE / SE / TE / BE">
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Mentees list / attendance -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mentees Present</label>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="selectAllMentees">
+              <label class="form-check-label fw-semibold" for="selectAllMentees">
+                Select All Mentees
+              </label>
+            </div>
+            <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+              {% for p in mentees %}
+                <div class="form-check">
+                  <input class="form-check-input mentee-checkbox"
+                   type="checkbox"
+                   value="{{ p.user.id }}"
+                   name="mentees"
+                   data-semester="{{ p.semester }}"
+                   id="mentee_{{ p.user.id }}">
+
+                  <label class="form-check-label" for="mentee_{{ p.user.id }}">
+                    {{ p.student_name }} ({{ p.moodle_id }}) – {{ p.branch }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+            <small class="text-muted d-block mt-1">
+              Tick mentees who attended this interaction (this acts as attendance).
+            </small>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- Agenda -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Agenda Discussed</label>
+            <div class="mb-2">
+              {% for point in common_agenda %}
+                <div class="form-check form-check-inline mb-1">
+                  <input class="form-check-input" type="checkbox"
+                   name="agenda_points"
+                   id="agenda_{{ forloop.counter }}"
+                   value="{{ point }}">
+                  <label class="form-check-label badge rounded-pill px-3 py-2"
+                         for="agenda_{{ forloop.counter }}">
+                    {{ point }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+
+            <textarea name="agenda_extra" rows="4"
+                      class="form-control mt-2"
+                      placeholder="Add any extra agenda points or notes here..."></textarea>
+              <div id="agendaPreviewBox" class="alert alert-info d-none mt-2">
+                  <strong>Previous Agenda:</strong>
+                  <span id="agendaPreviewText"></span>
+              </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" id="saveInteractionBtn">
+              <span id="saveBtnText">
+                <i class="bi bi-send me-1"></i> Save Interaction
+              </span>
+
+              <span id="saveBtnSpinner" class="spinner-border spinner-border-sm ms-2 d-none"
+                    role="status" aria-hidden="true"></span>
+            </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.modal-body {
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.modal-footer {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  z-index: 10;
+}
+/* ✅ Fix invisible agenda text */
+.form-check-label.badge {
+  background-color: #f1f3f5;
+  color: #000;
+  border: 1px solid #ced4da;
+  cursor: pointer;
+}
+
+/* ✅ Highlight selected agenda */
+.agenda-active {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const mentees = document.querySelectorAll(".mentee-checkbox");
+  const semesterField = document.getElementById("autoSemester");
+  const classField = document.getElementById("autoClass");
+
+  function romanToInt(r) {
+    if (!r) return null;
+    const s = String(r).trim().toUpperCase();
+
+    const map = { I:1, V:5, X:10 };
+    let total = 0, prev = 0;
+
+    for (let i = s.length - 1; i >= 0; i--) {
+      const val = map[s[i]];
+      if (!val) return null;
+      if (val < prev) total -= val;
+      else { total += val; prev = val; }
+    }
+    return total;
+  }
+
+  function semToClass(sem) {
+    const n = romanToInt(sem);
+    if (!n) return "";
+
+    if (n === 1 || n === 2) return "FE";
+    if (n === 3 || n === 4) return "SE";
+    if (n === 5 || n === 6) return "TE";
+    if (n === 7 || n === 8) return "BE";
+    return "";
+  }
+
+  window.restoreSemester = function () {
+    const selected = [...mentees].filter(cb => cb.checked);
+
+    const semesters = [...new Set(selected.map(cb => cb.dataset.semester).filter(Boolean))];
+    semesterField.value = semesters.join(", ");
+
+    const classes = [...new Set(semesters.map(semToClass).filter(Boolean))];
+    classField.value = classes.join(", ");
+  };
+
+  mentees.forEach(cb => cb.addEventListener("change", window.restoreSemester));
+});
+
+
+
+// Make bootstrap toasts auto-hide
+  document.addEventListener("DOMContentLoaded", function () {
+  if (window.bootstrap && bootstrap.Toast) {
+    const toastElList = [].slice.call(document.querySelectorAll('.toast'));
+    toastElList.forEach(function (toastEl) {
+      const t = new bootstrap.Toast(toastEl, { delay: 4000 });
+      t.show();
+    });
+  }
+});
+
+// SAFE JS DECODER (XSS + QUOTES SAFE)
+function safeDecode(str) {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = str;
+  return txt.value;
+}
+
+//Edit form
+function openEditModal(id, date, agendaRaw, selectedMentees) {
+  const modalEl = document.getElementById("interactionModal");
+  const modal = new bootstrap.Modal(modalEl);
+
+  const agenda = safeDecode(agendaRaw); // ✅ FULL SAFETY LAYER
+
+  document.getElementById("interaction_id").value = id;
+  document.querySelector("input[name='date']").value = date;
+
+  // ✅ Reset mentees
+  document.querySelectorAll(".mentee-checkbox").forEach(cb => {
+    cb.checked = false;
+  });
+
+  selectedMentees.forEach(mid => {
+    const checkbox = document.getElementById("mentee_" + mid);
+    if (checkbox) checkbox.checked = true;
+  });
+
+  if (window.restoreSemester) restoreSemester();
+
+  // ✅ Reset agendas
+  document.querySelectorAll("input[name='agenda_points']").forEach(cb => {
+    cb.checked = false;
+    const label = document.querySelector(`label[for="${cb.id}"]`);
+    if (label) label.classList.remove("agenda-active");
+  });
+
+  const agendaParts = agenda.split(";").map(p => p.trim()).filter(Boolean);
+
+  document.querySelectorAll("input[name='agenda_points']").forEach(cb => {
+    if (agendaParts.includes(cb.value)) {
+      cb.checked = true;
+      const label = document.querySelector(`label[for="${cb.id}"]`);
+      if (label) label.classList.add("agenda-active");
+    }
+  });
+
+  const predefined = [...document.querySelectorAll("input[name='agenda_points']")]
+    .map(cb => cb.value);
+
+  const extraText = agendaParts.filter(p => !predefined.includes(p)).join("; ");
+  document.querySelector("textarea[name='agenda_extra']").value = extraText;
+
+  // ✅ Preview
+  const previewBox = document.getElementById("agendaPreviewBox");
+  const previewText = document.getElementById("agendaPreviewText");
+
+  if (previewBox && previewText) {
+    previewText.innerText = agenda;
+    previewBox.classList.remove("d-none");
+  }
+
+  modal.show();
+}
+
+// edit click listener
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+
+          const id = this.dataset.id;
+          const date = this.dataset.date;
+
+          // ✅ SAFELY READ RAW TEXT
+          const agenda = document.getElementById("agenda_text_" + id).value;
+
+          const mentees = this.dataset.mentees
+            ? this.dataset.mentees.split(",").map(Number)
+            : [];
+
+          openEditModal(id, date, agenda, mentees);
+        });
+      });
+    });
+
+// AI Summary toggle
+function toggleSummary(id) {
+  const box = document.getElementById("ai_summary_" + id);
+  box.classList.toggle("d-none");
+}
+
+// ✅ AJAX AI Summary Regenerator
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+function setProgress(progressBar, pct, text, isError=false) {
+  progressBar.classList.remove("bg-danger", "bg-success");
+  if (isError) progressBar.classList.add("bg-danger");
+  progressBar.style.width = pct + "%";
+  progressBar.innerText = text;
+}
+
+function regenerateAISummary(id) {
+  if (!confirm("Generate AI Summary?")) return;
+
+  const progressWrap = document.getElementById("ai_progress_wrap_" + id);
+  const progressBar = document.getElementById("ai_progress_" + id);
+  const summaryBox = document.getElementById("ai_summary_" + id);
+
+  progressWrap.classList.remove("d-none");
+  setProgress(progressBar, 5, "5%");
+
+  let fakeProgress = 5;
+  const progressTimer = setInterval(() => {
+    if (fakeProgress < 90) {
+      fakeProgress += Math.floor(Math.random() * 6) + 3;
+      setProgress(progressBar, fakeProgress, fakeProgress + "%");
+    }
+  }, 500);
+
+  fetch(`/mentor/regenerate-ai-summary/${id}/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "X-Requested-With": "XMLHttpRequest"
+    }
+  })
+  .then(async (res) => {
+    // If server returned HTML/redirect/403, res.json() will fail.
+    const contentType = res.headers.get("content-type") || "";
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`HTTP ${res.status}. ${body.slice(0, 200)}`);
+    }
+    if (!contentType.includes("application/json")) {
+      const body = await res.text();
+      throw new Error(`Expected JSON but got: ${contentType}. ${body.slice(0, 200)}`);
+    }
+    return res.json();
+  })
+  .then(data => {
+    clearInterval(progressTimer);
+
+    if (data && data.success) {
+      setProgress(progressBar, 100, "Done");
+      progressBar.classList.add("bg-success");
+
+      // ✅ Show the "View AI Summary" button immediately
+      const viewBtn = document.getElementById("view_summary_btn_" + id);
+      if (viewBtn) viewBtn.classList.remove("d-none");
+
+      // ✅ Fill the UL list
+      const ul = document.getElementById("ai_summary_list_" + id);
+      if (ul) {
+        const lines = (data.summary || "").split("\n").filter(Boolean);
+        ul.innerHTML = lines.map(line => `<li>${line.replace("• ", "")}</li>`).join("");
+      }
+
+      // ✅ Optionally auto-open the summary box after generating
+      const summaryBox = document.getElementById("ai_summary_" + id);
+      if (summaryBox) summaryBox.classList.remove("d-none");
+
+      setTimeout(() => progressWrap.classList.add("d-none"), 800);
+    } else {
+      setProgress(progressBar, 100, "Failed", true);
+    }
+  })
+  .catch(err => {
+    clearInterval(progressTimer);
+    setProgress(progressBar, 100, "Error", true);
+
+    // Optional: log the real reason so you can see it in DevTools console
+    console.error("AI Summary AJAX error:", err);
+  });
+}
+
+function getCSRFToken() {
+  return document.cookie
+    .split("; ")
+    .find(row => row.startsWith("csrftoken="))
+    ?.split("=")[1];
+}
+
+// Remove AI summary
+function removeAISummary(id) {
+  if (!confirm("Remove this AI summary? You can undo this.")) return;
+
+  fetch(`/ai-summary/remove/${id}/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCSRFToken(),
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById(`ai_summary_${id}`)?.classList.add("d-none");
+
+      document.getElementById(`view_summary_btn_${id}`)?.classList.add("d-none");
+      document.getElementById(`remove_summary_btn_${id}`)?.classList.add("d-none");
+
+      // ✅ Show undo
+      document.getElementById(`undo_summary_btn_${id}`)?.classList.remove("d-none");
+    }
+  });
+}
+
+function undoAISummary(id) {
+  fetch(`/ai-summary/undo/${id}/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCSRFToken(),
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      const list = document.getElementById(`ai_summary_list_${id}`);
+      list.innerHTML = "";
+
+      data.summary.split("\n").forEach(line => {
+        if (line.trim()) {
+          const li = document.createElement("li");
+          li.innerText = line.replace("• ", "");
+          list.appendChild(li);
+        }
+      });
+
+      document.getElementById(`ai_summary_${id}`)?.classList.remove("d-none");
+
+      document.getElementById(`view_summary_btn_${id}`)?.classList.remove("d-none");
+      document.getElementById(`remove_summary_btn_${id}`)?.classList.remove("d-none");
+
+      // ✅ Hide undo again
+      document.getElementById(`undo_summary_btn_${id}`)?.classList.add("d-none");
+    }
+  });
+}
+
+
+
+
+// ✅ Spinner Loader on Save Interaction
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("interactionForm");
+  const btn = document.getElementById("saveInteractionBtn");
+  const btnText = document.getElementById("saveBtnText");
+  const spinner = document.getElementById("saveBtnSpinner");
+
+  form.addEventListener("submit", function () {
+    btn.disabled = true;
+    spinner.classList.remove("d-none");
+    btnText.innerHTML = "Saving...";
+  });
+});
+
+// If You Want Cancel to Reset Spinner
+document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(btn => {
+  btn.addEventListener("click", function () {
+    const saveBtn = document.getElementById("saveInteractionBtn");
+    const spinner = document.getElementById("saveBtnSpinner");
+    const text = document.getElementById("saveBtnText");
+
+    saveBtn.disabled = false;
+    spinner.classList.add("d-none");
+    text.innerHTML = '<i class="bi bi-send me-1"></i> Save Interaction';
+  });
+});
+
+//Attendance % bar graph
+document.addEventListener("DOMContentLoaded", function () {
+  const labels = [
+    {% for a in attendance %}
+      "{{ a.name }}",
+    {% endfor %}
+  ];
+
+  const values = [
+    {% for a in attendance %}
+      {{ a.percent }},
+    {% endfor %}
+  ];
+
+  // ✅ Dynamic colors (RED if < 75)
+  const barColors = values.map(v => v < 75 ? "rgba(220,53,69,0.8)" : "rgba(13,110,253,0.8)");
+
+  // ✅ Calculate average
+  const avg =
+    values.reduce((a, b) => a + b, 0) / (values.length || 1);
+
+  const avgLine = new Array(values.length).fill(avg.toFixed(2));
+
+  const ctx = document.getElementById("attendanceChart").getContext("2d");
+
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Attendance %",
+          data: values,
+          backgroundColor: barColors,
+          borderRadius: 6
+        },
+        {
+          label: "Average",
+          data: avgLine,
+          type: "line",
+          borderColor: "green",
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ctx.raw + "%";
+            }
+          }
+        }
+      }
+    }
+  });
+});
+
+// Monthly attendance graph
+// Monthly attendance graph (multi-color bars)
+document.addEventListener("DOMContentLoaded", function () {
+  const monthLabels = [
+    {% for m in monthly_attendance %}
+      "{{ m.month }}",
+    {% endfor %}
+  ];
+
+  const monthValues = [
+    {% for m in monthly_attendance %}
+      {{ m.percent }},
+    {% endfor %}
+  ];
+
+  // Generate different colors for each bar
+  const barColors = monthValues.map((_, i) => {
+    const colors = [
+      "rgba(13,110,253,0.8)",  // blue
+      "rgba(25,135,84,0.8)",   // green
+      "rgba(255,193,7,0.8)",   // yellow
+      "rgba(220,53,69,0.8)",   // red
+      "rgba(111,66,193,0.8)",  // purple
+      "rgba(23,162,184,0.8)"   // teal
+    ];
+    return colors[i % colors.length];
+  });
+
+  const ctx2 = document.getElementById("monthlyChart").getContext("2d");
+
+  new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: "Monthly Attendance %",
+        data: monthValues,
+        backgroundColor: barColors,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, max: 100 }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.raw + "%"
+          }
+        }
+      }
+    }
+  });
+});
+
+
+// Attendance select-all button logic
+document.addEventListener("DOMContentLoaded", function () {
+  const selectAll = document.getElementById("selectAllMentees");
+  const mentees = document.querySelectorAll(".mentee-checkbox");
+
+  selectAll.addEventListener("change", function () {
+    mentees.forEach(cb => cb.checked = selectAll.checked);
+    if (window.restoreSemester) restoreSemester();
+  });
+
+  // Auto-update "Select All" if user manually unchecks any mentee
+  mentees.forEach(cb => {
+    cb.addEventListener("change", function () {
+      selectAll.checked = [...mentees].every(m => m.checked);
+      if (window.restoreSemester) restoreSemester();
+    });
+  });
+});
+
+</script>
+{% endblock %}

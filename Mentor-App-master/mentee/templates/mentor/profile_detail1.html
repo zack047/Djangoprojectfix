@@ -1,0 +1,57 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %} {{msg.sender}}'s Profile {% endblock %}
+{% block content %}
+   <main role="main" class="container">
+      <div class="row">
+        <div class="col-md-8">
+            <div class="content-section bg-white">
+              <div class="media">
+                 {% if msg.sender.profile.image %}
+                 <img class="rounded-circle account-img" src="{{ msg.sender.profile.image.url }}">
+                 {% else %}
+                 <img class="rounded-circle account-img" src="/media/default.png">
+                 {% endif %}
+                 <div class="media-body">
+                     {% if msg.sender.profile.student_name %}
+                     <h2 class="account-heading text-dark">{{ msg.sender.profile.student_name }}</h2>
+                     {% else %}
+                     <h2 class="account-heading text-dark">{{ msg.sender }}</h2>
+                     {% endif %}
+                    <h6 class="text-dark mb-2">Moodle ID: {{ msg.sender }}</h6>
+                    <p class="text-dark mb-2">Email: {{ msg.sender.email }}</p>
+                    {% if msg.sender.profile %}
+                        <p class="text-dark mb-2">Contact: {{ msg.sender.profile.contact_number }}</p>
+                        <p class="text-dark mb-2">
+                            DoB: {{ msg.sender.profile.dob|date:"d-m-Y" }}
+                            (Age: {{ msg.sender.profile.age }} years)
+                        </p>
+                        <p class="text-muted text-dark">Department: {{msg.sender.profile.branch}}<br>
+                           Semester: {{ msg.sender.profile.semester }}<br>
+                           Year: {{ msg.sender.profile.year }}<br>
+                        </p>
+                        <p class="text-secondary">Career Domain: {{ msg.sender.profile.career_domain }}</p>
+                     {% else %}
+                        <p class="text-dark mb-2"><span style="color:rgb(255,0,0)">Note: No information available, since the Profile is not updated.</span><br>Contact: None</p>
+                        <p class="text-dark mb-2">DoB: None</p>
+                        <p class="text-muted text-dark">Department: None<br>
+                           Semester: None<br>
+                           Year: None<br>
+                        </p>
+                        <p class="text-secondary">Career Domain: None</p>
+                    {% endif %}
+
+        <!--              <a class="btn btn-primary btn-sm" href="{% url 'start-chat1' pk=msg.sender.pk %}">Send Message</a>-->
+                 </div>
+              </div>
+            </div>
+        </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+            <a href="{% url 'inbox2' %}"
+               class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                <i class="bi bi-arrow-left-circle"></i> Back
+            </a>
+        </div><br>
+      </div>
+   </main>
+{% endblock %}

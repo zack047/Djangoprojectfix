@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<br><br><br>
+<div class="jumbotron">
+  <h1 class="display-4">Welcome To MentorConnect</h1>
+  <p class="lead">A platform that connects ambitious students with successful and experienced mentors. The initiative encourages idea and knowledge sharing among APSIT's most promising students, inspiring a collaborative approach to career shaping and growth.</p>
+  <hr class="my-4">
+    <p><b>Sign Up To Be A Mentee</b></p>
+  <a class="btn btn-primary btn-lg" href="{% url 'register' %}" role="button">Click Here</a><br><br>
+    <hr>
+    <p><b>Sign Up To Be A Mentor</b></p>
+    <a class="btn btn-primary btn-lg" href="{% url 'register1' %}" role="button">Click Here</a>
+</div>
+{% endblock %}

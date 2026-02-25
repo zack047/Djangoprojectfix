@@ -1,0 +1,25 @@
+{% extends "admin/index.html" %}
+{% block content %}
+{% if user.is_superuser == True %}
+<style>
+.custom-btn {
+    background: #ffc107;
+    color: black;
+    font-weight: 700;
+    margin-right: 12px;   /* spacing between buttons */
+    padding: 6px 12px;
+    text-decoration: none !important;
+    display: inline-block;
+}
+</style>
+<div style="margin-bottom:20px;">
+    <a href="{% url 'hod_dashboard' %}" class="button custom-btn">
+        📊 View HOD Dashboard
+    </a>
+    <a href="{% url 'activity_logs_page' %}" class="button custom-btn">
+        📝 View Activity Logs
+    </a>
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}

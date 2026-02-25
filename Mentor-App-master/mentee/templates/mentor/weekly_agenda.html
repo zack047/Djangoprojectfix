@@ -1,0 +1,189 @@
+{% extends "mentor/base1.html" %}
+{% load static %}
+{% block title %} Agenda {% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <h3 class="fw-bold text-light mb-1">Weekly Agenda</h3>
+    {% if user.is_authenticated and user.is_staff %}
+    <small class="text-muted mb-3" style="color: #fff !important;">Add, Edit, Delete, View and Download the Agenda for your session.</small><hr>
+    {% endif %}
+    {% if not user.is_staff %}
+  <small class="text-muted mb-3" style="color: #fff !important;">Find, View and download the Agenda for your session.</small><hr>
+    {% endif %}
+
+  <!-- Filters -->
+  <form method="get" class="row g-2 mb-3">
+      <div class="col-md-3 mb-3">
+        <label class="fw-bold text-light">Week</label>
+        <select name="week" class="form-select">
+          <option value="">All Weeks</option>
+          {% for val, label in WEEK_CHOICES %}
+            <option value="{{ val }}" {% if filters.week == val %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="fw-bold text-light">Year</label>
+        <select name="year" class="form-select">
+          <option value="">All Classes</option>
+          {% for val, label in YEAR_CHOICES %}
+            <option value="{{ val }}" {% if filters.year == val %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="fw-bold text-light">Semester</label>
+        <select name="sem" class="form-select">
+          <option value="">All Semesters</option>
+          {% for val, label in SEM_CHOICES %}
+            <option value="{{ val }}" {% if filters.sem == val %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 gap-2">
+        <label class="fw-bold text-light">Filter</label><br>
+        <button class="btn btn-primary" type="submit">Search</button>
+        <a class="btn btn-dark" href="{% url 'weekly-agenda' %}">Reset</a>
+      </div>
+  </form>
+
+{% if user.is_authenticated and user.is_staff %}
+  {% if can_edit %}
+  <div class="card mb-4 p-0 bg-black text-light">
+    <div class="card-header d-flex justify-content-between align-items-center bg-dark">
+      <span class="fw-bold">
+        {% if editing %}Edit Agenda #{{ editing_entry.pk }}{% else %}Add New Agenda{% endif %}
+      </span>
+
+      {% if editing %}
+        <!-- Cancel edit but preserve filters -->
+        <a class="btn btn-sm btn-outline-danger"
+           href="{% url 'weekly-agenda' %}?week={{ filters.week }}&year={{ filters.year }}&sem={{ filters.sem }}">
+          Cancel Edit
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="card-body bg-light text-black">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+
+        <!-- Hidden PK to decide update vs create -->
+        {% if editing %}
+          <input type="hidden" name="entry_id" value="{{ editing_entry.pk }}">
+        {% endif %}
+
+        <div class="col-md-3 fw-bold">{{ form.date.label_tag }}{{ form.date }}</div>
+        <div class="col-md-3 fw-bold">{{ form.academic_year.label_tag }}{{ form.academic_year }}</div>
+        <div class="col-md-2 fw-bold">{{ form.week.label_tag }}{{ form.week }}</div>
+        <div class="col-md-4 fw-bold">{{ form.year.label_tag }}{{ form.year }}</div>
+        <div class="col-md-2 fw-bold">{{ form.sem.label_tag }}{{ form.sem }}</div>
+        <div class="col-md-6 fw-bold">
+          {{ form.agenda_file.label_tag }}{{ form.agenda_file }}
+          {% if editing_entry and editing_entry.agenda_file %}
+            <small class="d-block mt-1">
+              Current file:
+              <a href="{{ editing_entry.agenda_file.url }}" target="_blank">View</a>
+              (upload a new file to replace)
+            </small>
+          {% endif %}
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-success" type="submit">
+            {% if editing %}Update{% else %}Save{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+{% endif %}
+  <!-- Table -->
+  <div class="card p-0 bg-black">
+    <div class="card-header d-flex justify-content-between align-items-center bg-dark text-light">Uploaded Agendas
+        {% if user.is_staff %}
+          <form method="post" action="{% url 'weekly-agenda' %}"
+                onsubmit="return confirm('This will delete ALL agenda entries permanently. Continue?');"
+                class="m-0">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete_all">
+            <button type="submit" class="btn btn-danger">
+              Delete All
+            </button>
+          </form>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-dark table-striped mb-0">
+        <thead>
+          <tr>
+            <th class="text-center">Date</th>
+            <th class="text-center">Academic Year</th>
+            <th class="text-center">Week</th>
+            <th class="text-center">Class</th>
+            <th class="text-center">Sem</th>
+            <th class="text-center">Agenda</th>
+            <th class="text-center">Created By</th>
+            {% if can_edit and user.is_staff %}<th class="text-center">Action</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+          <tr>
+            <td class="text-center">{{ e.date }}</td>
+            <td class="text-center">{{ e.academic_year }}</td>
+            <td class="text-center">{{ e.week }}</td>
+            <td class="text-center">{{ e.year }}</td>
+            <td class="text-center">{{ e.sem }}</td>
+            <td class="text-center">
+              {% if e.agenda_file %}
+                <a class="btn btn-outline-primary" href="{{ e.agenda_file.url }}" target="_blank"><i class="bi bi-eye"></i></a>
+                <a class="btn btn-outline-success" href="{{ e.agenda_file.url }}" download><i class="bi bi-box-arrow-down"></i></a>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="text-center">{{ e.created_by.username|default:"-" }}</td>
+
+            {% if can_edit and user.is_staff %}
+            <td class="align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                <!-- Edit link keeps current filters -->
+                  <a class="btn btn-sm btn-outline-warning"
+                     href="{% url 'weekly-agenda' %}?edit={{ e.pk }}&week={{ filters.week }}&class={{ filters.class }}&sem={{ filters.sem }}">
+                     <i class="bi bi-pencil-square"></i>
+                  </a>
+                  <form method="post" action="{% url 'weekly-agenda' %}"
+                        onsubmit="return confirm('Delete this entry permanently?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="delete_id" value="{{ e.pk }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center">No entries found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

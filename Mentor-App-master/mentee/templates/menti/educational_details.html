@@ -1,0 +1,195 @@
+{% extends "menti/base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %} Educational Details {% endblock %}
+{% block content %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
+    <!-- Main Content-->
+    <div class="content shifted flex-grow-1 p-4">
+        <div class="container">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-3">
+                <h2 class="text-white p-3 bg-black rounded">
+                    {% if is_mentor_view == False %}
+                    <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                        <i id="sidebarIcon" class="bi bi-list"></i>
+                    </a>
+                    {% endif %}
+                    Educational Details
+                </h2>
+            </div>
+
+            <!-- Table -->
+            <table class="table table-bordered table-hover align-middle shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">Examination</th>
+                        <th class="text-center">Percentage</th>
+                        <th class="text-center">University/Board</th>
+                        <th class="text-center">Year of Passing</th>
+                        {% if is_mentor_view == False %}
+                        <th class="text-center">Action</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in details %}
+                    <tr>
+                        <td class="text-center">{{ detail.examination }}</td>
+                        <td class="text-center">{{ detail.percentage }}%</td>
+                        <td class="text-center">{{ detail.university_board }}</td>
+                        <td class="text-center">{{ detail.year_of_passing }}</td>
+                        {% if is_mentor_view == False %}
+                        <td class="text-center">
+                            <form method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" name="delete" value="{{ detail.id }}"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Are you sure you want to delete this record?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No educational details added yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if is_mentor_view == False %}
+            <!-- Add Form -->
+            <div class="row justify-content-center">
+                <div class="col-md-10"><br>
+                    <button class="btn btn-danger" id="showFormBtn">
+                        Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
+                    </button><hr>
+                    <div class="card shadow-lg rounded-3">
+                        <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">Add Educational Details</h4>
+                        </div><br><br>
+                        <div class="card-body">
+                            <div id="internshipForm">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
+                                <form method="post" enctype="multipart/form-data"
+                                      action="{% url 'educational-details' %}">
+                                        {% csrf_token %}
+                                        {% if form.non_field_errors %}
+                                            <div class="alert alert-danger">
+                                                {{ form.non_field_errors }}
+                                            </div>
+                                        {% endif %}
+                                        <div class="row g-3">
+                                            <small class="text-muted" style="color:#ff0000 !important;">
+                                                Note: <ol><li>'*' asterisk denotes that the fields are required.</li>
+                                                    <li>For percentage, enter only number eg. 85.5 (Do not use '%' symbol).</li></ol>
+                                            </small>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Examination <span style="color:#ff0000 !important;">*</span></label>
+                                                    {{ form.examination }}
+                                                <div class="text-danger small">{{ form.examination.errors }}</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label">Percentage <span style="color:#ff0000 !important;">*</span></label>
+                                                {{ form.percentage }}
+                                                <div class="text-danger small">{{ form.percentage.errors }}</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label">University/Board <span style="color:#ff0000 !important;">*</span></label>
+                                                {{ form.university_board }}
+                                                <div class="text-danger small">{{ form.university_board.errors }}</div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label">Year of Passing <span style="color:#ff0000 !important;">*</span></label>
+                                                {{ form.year_of_passing }}
+                                                <div class="text-danger small">{{ form.year_of_passing.errors }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
+                                            <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">Submit</button>
+                                            <a href="{% url 'educational-details' %}" class="btn btn-secondary btn-lg w-100 w-md-50">
+                                                Cancel
+                                            </a>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+                <a href="{% url 'long_term_goals' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    <i class="bi bi-arrow-left-circle"></i> Prev
+                </a>
+                <a href="{% url 'semester_results' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    Next <i class="bi bi-arrow-right-circle"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById("showFormBtn").addEventListener("click", function(){
+    var formDiv = document.getElementById("internshipForm");
+    var icon = document.getElementById("toggleIcon");
+    var btn = document.getElementById("showFormBtn");
+
+    // Toggle slide effect using class
+    formDiv.classList.toggle("show");
+
+    // toggle icon + text
+    if (icon.classList.contains("bi-plus-lg")) {
+        icon.classList.replace("bi-plus-lg", "bi-dash-lg"); // plus → minus
+        btn.childNodes[0].nodeValue = "Remove ";            // Add → Remove
+    } else {
+        icon.classList.replace("bi-dash-lg", "bi-plus-lg"); // minus → plus
+        btn.childNodes[0].nodeValue = "Add ";               // Remove → Add
+    }
+});
+</script>
+
+<style>
+/* Dropdown toggle icon animation */
+.toggle-icon {
+    transition: transform 0.3s ease-in-out;
+}
+a[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.slide-toggle {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease; /* smooth slide */
+}
+
+.slide-toggle.show {
+    max-height: 800px; /* set bigger than your form height */
+}
+
+#internshipForm {
+  max-height: 0;
+  overflow:hidden;
+  transition: max-height 0.4s ease;
+}
+#internshipForm.show {
+  max-height: 1500px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %} Goals & Interest {% endblock %}
+{% block content %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
+    <!-- Main Content-->
+    <div class="content shifted flex-grow-1 p-4">
+        <div class="container">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-3">
+                <h2 class="text-white p-3 bg-black rounded">
+                    {% if is_mentor_view == False %}
+                    <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                        <i id="sidebarIcon" class="bi bi-list"></i>
+                    </a>
+                    {% endif %}
+                    Long Term Goals & Subject of Interest
+                </h2>
+            </div>
+
+            <!-- Long Term Goals Section -->
+            <table class="table table-bordered shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th colspan="2" class="text-start">LONG TERM GOALS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in goals %}
+                        <tr class="table-primary">
+                            <th class="w-25">Post BE</th>
+                            <td>
+                                {% if item.plan == "Other" %}
+                                    {{ item.custom_plan }}
+                                {% else %}
+                                    {{ item.get_plan_display }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr class="table-primary mb-3">
+                            <th>Reason</th>
+                            <td>{{ item.reason }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="text-end">
+                            <a href="{% url 'edit_goal' item.id %}" class="btn btn-sm btn-warning">
+                                Edit
+                            </a>
+
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="goal_id" value="{{ item.id }}">
+                                <button type="submit" name="delete_goal"
+                                        class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Delete this goal?');">
+                                    Delete
+                                </button>
+                            </form>
+                            </td>
+                        </tr>
+                        <!-- Spacer row to visually separate records -->
+                        <tr class="bg-light">
+                            <td colspan="2"></td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center">No records yet</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if is_mentor_view == False %}
+            <!-- Add Form -->
+            <div class="row justify-content-center">
+                <div class="col-md-10"><br>
+                    <button class="btn btn-danger" id="showFormBtn">
+                        {% if goal_edit_id %}Update Goal{% else %}Add Goal{% endif %} <i id="toggleIcon" class="bi bi-plus-lg"></i>
+                    </button><hr>
+                    <div class="card shadow-lg rounded-3">
+                        <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">Add Long Term Goals</h4>
+                        </div><br><br>
+                        <div class="card-body">
+                            <div id="internshipForm">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
+                                <form method="post" enctype="multipart/form-data"
+                                      action="{% if goal_edit_id %}{% url 'edit_goal' goal_edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
+                                    {% csrf_token %}
+                                    <div class="row g-3">
+                                        <small class="text-muted" style="color:#ff0000 !important;">
+                                            Note: '*' asterisk denotes that the fields are required.
+                                        </small>
+                                        <div class="col-12">
+                                            <label class="form-label">Post BE <span style="color:#ff0000 !important;">*</span></label>
+                                            <div class="form-control p-2" style="height:auto;">
+                                                {{ goal_form.plan }}
+
+                                                <!-- Dynamic "Other" text field -->
+                                                <div id="otherInput" style="display:none;" class="mt-2">
+                                                    {{ goal_form.custom_plan }}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label">Reason <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ goal_form.reason|add_class:"form-control" }}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
+                                        <button type="submit" name="save_goal" class="btn btn-success btn-lg w-100 w-md-50">{% if goal_edit_id %}Update Goal{% else %}Save Goal{% endif %}</button>
+                                        {% if goal_edit_id %}
+                                            <a href="{% url 'long_term_goals' %}" class="btn btn-secondary btn-lg w-100 w-md-50">
+                                                Cancel
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+<!---------------------------------------------- Subject of Interest -------------------------------------------------->
+            <hr style="border:none; border: 1px dashed #fff; opacity:1;">
+            <!-- Subject of Interest Section -->
+            <div class="card shadow-sm rounded bg-dark p-0">
+                <div class="card-header bg-dark text-white fw-bold">
+                    Subject of Interest
+                </div>
+                <table class="table table-bordered table-hover align-middle shadow-sm rounded">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-center">Sr. No.</th>
+                            <th class="text-center">Subject</th>
+                            {% if is_mentor_view == False %}
+                            <th class="text-center">Action</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in subjects %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td class="text-center">{{ item.subject }}</td>
+                                {% if is_mentor_view == False %}
+                                <td class="text-center">
+                                    <a href="{% url 'edit_subject' item.id %}" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{% url 'delete_subject' item.id %}" class="btn btn-sm btn-danger"
+                                       onclick="return confirm('Are you sure you want to delete this subject?');">Delete</a>
+                                </td>
+                                {% endif %}
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">No records yet</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if is_mentor_view == False %}
+            <div class="row justify-content-center">
+                <div class="col-md-10"><br>
+                    <button class="btn btn-danger" id="toggleSubjectBtn">
+                        {% if subject_edit_id %} Edit {% else %} Add {% endif %}
+                        <i id="subjectIcon" class="bi {% if subject_edit_id %}bi-pencil{% else %}bi-plus-lg{% endif %}"></i>
+                    </button>
+                    <hr>
+                    <div class="card shadow-lg rounded-3">
+                        <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">
+                                {% if subject_edit_id %} Edit Subject of Interest {% else %} Add Subject of Interest {% endif %}
+                            </h4>
+                        </div><br><br>
+                        <div class="card-body">
+                            <div id="subjectForm">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
+                                <form method="post" action="{% if subject_edit_id %}{% url 'edit_subject' subject_edit_id %}{% else %}{% url 'long_term_goals' %}{% endif %}">
+                                    {% csrf_token %}
+                                    <div class="col-12">
+                                        <label class="form-label">Subject <span style="color:#ff0000 !important;">*</span></label>
+                                        {{ subject_form.subject|add_class:"form-control" }}
+                                    </div>
+                                    <div class="d-flex justify-content-center gap-3 mt-4">
+                                        <button type="submit" name="save_subject" class="btn btn-success btn-lg w-100 w-md-50">
+                                            {% if subject_edit_id %} Update {% else %} Submit {% endif %}
+                                        </button>
+                                        {% if subject_edit_id %}
+                                            <a href="{% url 'long_term_goals' %}" class="btn btn-secondary btn-lg w-100 w-md-50">
+                                                Cancel
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+                <a href="{% url 'self_assessment' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    <i class="bi bi-arrow-left-circle"></i> Prev
+                </a>
+                <a href="{% url 'educational-details' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    Next <i class="bi bi-arrow-right-circle"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById("showFormBtn").addEventListener("click", function(){
+    var formDiv = document.getElementById("internshipForm");
+    var icon = document.getElementById("toggleIcon");
+    var btn = document.getElementById("showFormBtn");
+
+    // Toggle slide effect using class
+    formDiv.classList.toggle("show");
+
+    // toggle icon + text
+    if (icon.classList.contains("bi-plus-lg")) {
+        icon.classList.replace("bi-plus-lg", "bi-dash-lg"); // plus → minus
+        btn.childNodes[0].nodeValue = "Remove ";            // Add → Remove
+    } else {
+        icon.classList.replace("bi-dash-lg", "bi-plus-lg"); // minus → plus
+        btn.childNodes[0].nodeValue = "Add ";               // Remove → Add
+    }
+});
+
+document.getElementById("toggleSubjectBtn").addEventListener("click", function(){
+    let form = document.getElementById("subjectForm");
+    let icon = document.getElementById("subjectIcon");
+    let btn = document.getElementById("toggleSubjectBtn");
+
+    //Toggle slide effect using class
+    form.classList.toggle("show");
+
+    // toggle icon + text
+    if (icon.classList.contains("bi-plus-lg")) {
+        icon.classList.replace("bi-plus-lg", "bi-dash-lg"); // plus → minus
+        btn.childNodes[0].nodeValue = "Remove ";            // Add → Remove
+    } else {
+        icon.classList.replace("bi-dash-lg", "bi-plus-lg"); // minus → plus
+        btn.childNodes[0].nodeValue = "Add ";               // Remove → Add
+    }
+});
+
+//Long term goal
+document.addEventListener("DOMContentLoaded", function () {
+    const radios = document.querySelectorAll("input[name='plan']");
+    const otherInput = document.getElementById("otherInput");
+
+    radios.forEach(radio => {
+        radio.addEventListener("change", () => {
+            otherInput.style.display = (radio.value === "Other") ? "block" : "none";
+        });
+    });
+});
+</script>
+
+<style>
+/* Dropdown toggle icon animation */
+.toggle-icon {
+    transition: transform 0.3s ease-in-out;
+}
+a[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.slide-toggle {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease; /* smooth slide */
+}
+
+.slide-toggle.show {
+    max-height: 800px; /* set bigger than your form height */
+}
+
+#internshipForm {
+  max-height: 0;
+  overflow:hidden;
+  transition: max-height 0.4s ease;
+}
+#internshipForm.show {
+  max-height: 1500px;
+}
+#subjectForm {
+  max-height: 0;
+  overflow:hidden;
+  transition: max-height 0.4s ease;
+}
+#subjectForm.show {
+  max-height: 1500px;
+}
+
+.table-borderless th,
+.table-borderless td {
+    border: none !important;
+    font-size: 1rem;
+}
+
+.table-borderless th {
+    font-weight: 600;
+}
+
+.card-header {
+    font-size: 1.3rem;
+    letter-spacing: 0.5px;
+}
+</style>
+{% endblock %}

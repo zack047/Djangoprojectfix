@@ -1,0 +1,156 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %} Message Corner {% endblock %}
+{% block content %}
+<main role="main" class="container">
+  <div class="d-flex">
+    <div class="row">
+      <div class="col-12">
+        <div class="content flex-grow-1 p-4">
+          <div class="container">
+            <div class="content-section">
+              <h3>
+                <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                  <i id="sidebarIcon" class="bi bi-list"></i>
+                </a> |
+                Message Corner
+              </h3>
+              <p class="text-muted" style="color: #fff !important;">Manage your messages, queries and meetings.</p>
+
+              <!-- Cards layout -->
+              <div class="row row-cols-1 row-cols-md-3 g-4">
+
+                <!-- Create New Message -->
+<!--                <div class="col">-->
+<!--                  <div class="card h-100 shadow-sm text-center bg-black p-3">-->
+<!--                    <div class="card-body">-->
+<!--                      <i class="bi bi-pencil-square fs-1 text-primary"></i>-->
+<!--                      <h5 class="card-title text-light mt-2">Create Message</h5>-->
+<!--                      <p class="card-text text-secondary">Write and send a new message.</p>-->
+<!--                      <a href="{% url 'Message1' %}" class="btn btn-outline-primary">Open</a>-->
+<!--                    </div>-->
+<!--                  </div>-->
+<!--                </div>-->
+
+<!--                &lt;!&ndash; Sent Messages &ndash;&gt;-->
+<!--                <div class="col">-->
+<!--                  <div class="card h-100 shadow-sm text-center p-3">-->
+<!--                    <div class="card-body">-->
+<!--                      <i class="bi bi-send fs-1 text-secondary"></i>-->
+<!--                      <h5 class="card-title mt-2">Sent Messages</h5>-->
+<!--                      <p class="card-text">View all messages you have sent.</p>-->
+<!--                      <a href="{% url 'list1' %}" class="btn btn-outline-secondary">Open</a>-->
+<!--                    </div>-->
+<!--                  </div>-->
+<!--                </div>-->
+
+                <!-- Unapproved Requests -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm text-center bg-black p-3">
+                    <div class="card-body">
+                      <i class="bi bi-hourglass-split fs-1 text-warning"></i>
+                      <h5 class="card-title text-light mt-2">Unapproved Requests</h5>
+                      <p class="card-text text-secondary">Pending requests ({{ count }}).</p>
+                      <a href="{% url 'inbox2' %}" class="btn btn-outline-warning">Open</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Approved Requests -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm text-center bg-black p-3">
+                    <div class="card-body">
+                      <i class="bi bi-check-circle fs-1 text-success"></i>
+                      <h5 class="card-title text-light mt-2">Approved Requests</h5>
+                      <p class="card-text text-secondary">Requests that have been approved.</p>
+                      <a href="{% url 'approved1' %}" class="btn btn-outline-success">Open</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Conversations -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm text-center bg-black p-3">
+                    <div class="card-body">
+                      <i class="bi bi-chat-dots fs-1 text-info"></i>
+                      <h5 class="card-title text-light mt-2">Conversations</h5>
+                      <p class="card-text text-secondary">Your active chats ({{ count2 }}).</p>
+                      <a href="{% url 'conv1' %}" class="btn btn-outline-info">Open</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Meetings -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm text-center bg-black p-3">
+                    <div class="card-body">
+                      <i class="bi bi-camera-video fs-1 text-secondary"></i>
+                      <h5 class="card-title text-light mt-2">My Meetings</h5>
+                      <p class="card-text text-secondary">Check scheduled or past meetings.</p>
+                      <a href="{% url 'vc1' %}" class="btn btn-outline-secondary">Open</a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Queries -->
+                <div class="col">
+                  <div class="card h-100 shadow-sm text-center bg-black p-3">
+                    <div class="card-body">
+                      <i class="bi bi-question-circle fs-1 text-danger"></i>
+                      <h5 class="card-title text-light mt-2">Mentee Queries</h5>
+                      <p class="card-text text-secondary">Check the queries submitted to you.</p>
+                      <a href="{% url 'mentor_queries' %}" class="btn btn-outline-danger">Open</a>
+                    </div>
+                  </div>
+                </div>
+              </div> <!-- row end -->
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<style>
+    /* Dropdown toggle icon animation */
+    .toggle-icon {
+        transition: transform 0.3s ease-in-out;
+    }
+    a[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .slide-toggle {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease; /* smooth slide */
+    }
+
+    .slide-toggle.show {
+        max-height: 800px; /* set bigger than your form height */
+    }
+</style>
+
+<!--   <main role="main" class="container">-->
+<!--      <div class="row">-->
+
+<!--        <div class="col-md-4">-->
+<!--          <div class="content-section">-->
+<!--            <h3>Message Corner</h3>-->
+<!--              <p class='text-muted'>Message Corner</p>-->
+<!--              <ul class="list-group">-->
+<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'Message1' %}">Create New Message</a></li>-->
+<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'list1' %} ">Sent Messages</a></li>-->
+<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'inbox2' %}">Requests ({{ count }})</a></li>-->
+<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'approved1' %}">Approved Requests ({{ count1 }})</a></li>-->
+<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'conv1' %}">Conversations ({{ count2 }})</a></li>-->
+<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'vc1' %} ">My Meetings</a></li>-->
+<!--                <li class="list-group-item list-group-item-light"><a href="{% url 'mentor_queries' %} ">Queries</a></li>&lt;!&ndash;zaru&ndash;&gt;-->
+<!--              </ul>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </main>-->
+{% endblock %}

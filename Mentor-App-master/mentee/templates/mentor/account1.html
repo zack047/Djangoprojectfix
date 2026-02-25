@@ -1,0 +1,241 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %} Dashboard {% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h5 class="text-center">
+      <strong>Name:</strong> {{ request.user.mentor.name }} <br>
+      <strong>Department:</strong> {{ request.user.mentor.department }}
+  </h5>
+  <!-- 🔔 DASHBOARD REMINDERS -->
+    <div class="row justify-content-center mb-3">
+      <div class="col-md-5">
+        <div class="card shadow-sm border-warning bg-dark bg-opacity-75">
+          <div class="card-header text-warning fw-bold">
+            <i class="bi bi-bell-fill"></i> Pending Notifications
+          </div>
+          <div class="card-body text-white">
+
+            {% if unapproved_messages > 0 %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>📩 New Requests</span>
+              <a href="{% url 'inbox2' %}" class="badge bg-danger">
+                {{ unapproved_messages }} {% if unapproved_messages == 1 %}Request{% else %}Requests{% endif %} <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+            {% endif %}
+
+            {% if pending_queries > 0 %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>❓ Pending Queries</span>
+              <a href="{% url 'mentor_queries' %}" class="badge bg-warning text-dark">
+                {{ pending_queries }} {% if pending_queries == 1 %}Query{% else %}Queries{% endif %} <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+            {% endif %}
+
+            {% if pending_meetings > 0 %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>📅 Scheduled Meetings</span>
+              <a href="{% url 'vc1' %}" class="badge bg-info">
+                {{ pending_meetings }} {% if pending_meetings == 1 %}Meeting{% else %}Meetings{% endif %} <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+            {% endif %}
+
+            {% if unapproved_messages == 0 and pending_queries == 0 and pending_meetings == 0 %}
+            <div class="text-success text-center fw-bold">
+              ✅ No pending notifications
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <div class="text-center my-3">
+    <a href="{% url 'profile1' %}" class="btn btn-warning">Next <i class="bi bi-arrow-right-circle"></i></a>
+  </div>
+
+    <!-- Add button -->
+    <div class="d-flex justify-content-end mb-2">
+      <button id="showFormBtn" class="btn btn-sm btn-warning" onclick="toggleForm()">Add <i id="toggleIcon" class="bi bi-plus-lg"></i></button>
+    </div>
+
+    <!-- Hidden Form -->
+    <div id="add-form" class="card p-3 mb-4 bg-primary bg-opacity-50">
+      <form method="post" class="d-flex justify-content-center align-items-center gap-2">
+        {% csrf_token %}
+        <label class="fw-bold text-white">Moodle Id</label>
+        {{ form.moodle_id }}
+        <button type="submit" class="btn btn-warning">
+          Submit <i class="bi bi-send"></i>
+        </button>
+      </form>
+      {% if form.errors %}
+        <div class="text-danger mt-2">{{ form.errors.moodle_id }}</div>
+      {% endif %}
+    </div>
+
+  <!-- Table -->
+  <div class="card p-3 bg-primary bg-opacity-50">
+      <h5 class="text-white"><i class="bi bi-person-check"></i> Mentees Under You</h5>
+    <table class="table table-bordered table-hover table-striped text-center">
+      <thead class="table-dark">
+        <tr>
+          <th>Sr.No</th>
+          <th>Moodle Id</th>
+          <th>Name</th>
+          <th>Semester</th>
+          <th>Contact</th>
+          <th>Progress</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for mentee in mentees %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ mentee.moodle_id }}</td>
+        <td>{{ mentee.name }}</td>
+        <td>{{ mentee.semester }}</td>
+        <td>{{ mentee.contact }}</td>
+        <td style="min-width:160px;">
+          <div class="fw-bold">{{ mentee.progress }}</div>
+          <div class="progress" style="height: 10px;">
+            <div class="progress-bar
+                {% if mentee.progress_percent < 40 %} bg-danger
+                {% elif mentee.progress_percent < 80 %} bg-warning
+                {% else %} bg-success {% endif %}"
+                role="progressbar"
+                style="width: {{ mentee.progress_percent }}%;">
+            </div>
+          </div>
+        </td>
+        <td>
+          <a href="{% url 'view_mentee' mentee.id %}" class="btn btn-info btn-sm">View</a>
+          <form action="{% url 'remove_mentee' mentee.id %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Are you sure you want to remove this mentee?');">
+                <i class="bi bi-x"></i>
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No mentees assigned yet.</td></tr>
+      {% endfor %}
+    </tbody>
+    </table>
+  </div>
+    <!-- ======================= -->
+    <!-- MENTEES WITHOUT DOCUMENTS -->
+    <!-- ======================= -->
+
+    <div class="card p-3 bg-danger bg-opacity-25 mt-4">
+        <div class="d-flex justify-content-between">
+      <h5 class="text-danger text-center fw-bold">
+        ⚠️ Mentees Who Have Not Uploaded Documents
+      </h5>
+        {% if no_document_mentees %}
+            <form method="post" action="{% url 'remind_all_mentees' %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn btn-danger btn-sm position-relative"
+                      onclick="return confirm('Send reminder to all pending mentees?');">
+                <i class="bi bi-bell-fill"></i> Remind All
+                <!-- 🔴 Count Badge -->
+                <span class="position-absolute top-0 start-100 translate-middle
+                             badge rounded-pill bg-warning text-dark">
+                  {{ pending_reminder_count }}
+                </span>
+              </button>
+            </form>
+        {% endif %}
+        </div>
+      <table class="table table-bordered table-hover table-striped text-center mt-2">
+        <thead class="table-danger">
+          <tr>
+            <th>Sr.No</th>
+            <th>Moodle Id</th>
+            <th>Name</th>
+            <th>Semester</th>
+            <th>Contact</th>
+            <th>Progress</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mentee in no_document_mentees %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ mentee.moodle_id }}</td>
+            <td>{{ mentee.name }}</td>
+            <td>{{ mentee.semester }}</td>
+            <td>{{ mentee.contact }}</td>
+            <td>
+              <span class="badge bg-danger">{{ mentee.progress }}</span>
+            </td>
+            <td>
+              {% if mentee.has_pending %}
+                  <a href="{% url 'remind_mentee' mentee.id %}" class="btn btn-warning btn-sm">
+                    <i class="bi bi-bell"></i> Remind
+                  </a>
+              {% else %}
+                  <span class="badge bg-success">All docs done</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-success fw-bold">
+              ✅ All mentees have uploaded documents!
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+</div><br>
+
+<script>
+document.getElementById("showFormBtn").addEventListener("click", function(){
+    var formDiv = document.getElementById("add-form");
+    var icon = document.getElementById("toggleIcon");
+    var btn = document.getElementById("showFormBtn");
+
+    // Toggle slide effect using class
+    formDiv.classList.toggle("show");
+
+    // toggle icon + text
+    if (icon.classList.contains("bi-plus-lg")) {
+        icon.classList.replace("bi-plus-lg", "bi-dash-lg"); // plus → minus
+        btn.childNodes[0].nodeValue = "Remove ";            // Add → Remove
+    } else {
+        icon.classList.replace("bi-dash-lg", "bi-plus-lg"); // minus → plus
+        btn.childNodes[0].nodeValue = "Add ";               // Remove → Add
+    }
+});
+</script>
+
+<style>
+#add-form {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+  opacity: 0;
+}
+
+#add-form.show {
+  max-height: 200px;  /* adjust based on your form height */
+  opacity: 1;
+}
+
+h5{
+  color: #fff;
+}
+</style>
+{% endblock %}

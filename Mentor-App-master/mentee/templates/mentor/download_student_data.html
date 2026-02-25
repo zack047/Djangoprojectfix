@@ -1,0 +1,85 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %}Download Student Data{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold text-center mb-3" style="color: #fff !important;">Download Student's Data</h2>
+    <p class="text-center mb-3" style="color: #fff !important;"><small>Select <b>Category, Academic Year and Department</b> to retrieve student data.</small></p>
+    <form method="POST" class="shadow p-4 rounded bg-black">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold" style="color: #fff;">Select Category</label>
+                <select class="form-select" name="category" required>
+                    {% for val,label in categories %}
+                        <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-semibold" style="color: #fff;">Academic Year</label>
+                <select class="form-select" name="year" required>
+                    <option value="ALL">ALL YEARS</option>
+                    {% for y in years %}
+                        <option value="{{ y }}">{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-semibold" style="color: #fff;">Department</label>
+                <select class="form-select" name="branch">
+                    {% for b in branches %}
+                        <option value="{{ b }}">{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+        <button type="submit" name="export" value="excel" class="btn btn-success">
+            <i class="bi bi-filetype-xlsx me-1"></i>
+            Download Excel
+        </button>
+
+        <button type="submit" name="export" value="pdf" class="btn btn-danger">
+            <i class="bi bi-filetype-pdf me-1"></i>
+            Download PDF
+        </button>
+
+        <button type="submit" name="export" value="zip" class="btn btn-primary">
+            <i class="bi bi-file-earmark-zip me-1"></i>
+            Download ZIP (Excel + PDF + CSV + JSON)
+        </button>
+        </div>
+    </form>
+</div>
+
+{% if request.session.export_done %}
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div class="toast align-items-center text-bg-success border-0 show">
+        <div class="d-flex">
+            <div class="toast-body">
+                ✔ Export completed successfully!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Remove the flag so toast shows only once
+    fetch("{% url 'clear_export_flag' %}");
+</script>
+{% endif %}
+<style>
+    form select {
+        height: 48px;
+    }
+    button {
+        font-size: 1.1rem;
+    }
+</style>
+{% endblock %}

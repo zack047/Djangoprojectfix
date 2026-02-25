@@ -1,0 +1,299 @@
+{% extends 'menti/base.html' %}
+{% load custom_filters %}
+{% load static %}
+{% block title %} Profile Overview {% endblock %}
+{% block content %}
+{% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+{% endif %}
+<div class="d-flex">
+  <div class="content shifted flex-grow-1 p-4">
+    <div class="container">
+
+      <div class="d-flex align-items-center mb-3">
+        <h2 class="text-white p-3 bg-black rounded">
+          <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+            <i id="sidebarIcon" class="bi bi-list"></i>
+          </a>
+          Profile Overview
+        </h2>
+      </div>
+
+      <!-- Top Bar: Completeness + Actions -->
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
+        <div class="w-100 w-md-50">
+          <label class="fw-semibold text-light">Profile Completeness: {{ completeness_score }}%</label>
+          <div class="progress">
+            <div class="progress-bar" role="progressbar"
+                 style="width: {{ completeness_score }}%;"
+                 aria-valuenow="{{ completeness_score }}"
+                 aria-valuemin="0" aria-valuemax="100">
+              {{ completeness_score }}%
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{% url 'export_resume_pdf' %}" class="btn btn-success mt-4">
+            <i class="bi bi-file-earmark-pdf"></i> Download PDF
+          </a>
+          {% if overview.is_public and overview.public_slug %}
+            <button class="btn btn-sm btn-outline-primary" type="button"
+                    onclick="navigator.clipboard.writeText('{{ request.build_absolute_uri|slice:':-1' }}{% url 'public_portfolio' overview.public_slug %}'); alert('Public link copied!');">
+              <i class="bi bi-link-45deg"></i> Copy Public Link
+            </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Completeness breakdown (small) -->
+      <details class="mb-4">
+        <summary class="text-muted" style="color: #fff !important;">View completeness checklist</summary>
+        <ul class="mt-2 text-light">
+          {% for item in completeness_items %}
+            <li>
+              {% if item.done %}
+                ✅ {{ item.label }}
+              {% else %}
+                ❌ {{ item.label }}
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </details>
+
+      <!-- Profile Header -->
+      <div class="card shadow-sm mb-4 p-0">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center">
+          <div class="me-md-4 mb-3 mb-md-0">
+            <img src="{{ profile.image.url }}" alt="Profile Pic"
+                 class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
+          </div>
+          <div>
+            <h3 class="mb-1">{{ profile.student_name }}</h3>
+            <p class="mb-1">
+              {{ profile.branch }} | {{ profile.year }} | Sem {{ profile.semester }}
+            </p>
+            <p class="mb-1">
+              <strong>Career Domain:</strong> {{ profile.career_domain|default:"Not specified" }}
+            </p>
+            <p class="mb-0">
+              <i class="bi bi-envelope"></i> {{ user.email|default:"—"  }} &nbsp; | &nbsp;
+              <i class="bi bi-telephone"></i> {{ profile.contact_number|default:"—"  }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row: Left (overview + education) / Right (edit overview form) -->
+      <div class="row">
+        <div class="col-md-8">
+
+          <!-- Overview Sections -->
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Professional Summary</h5></div>
+            <div class="card-body">
+              <p class="mb-0">{{ overview.profile_summary|default:"Add a professional summary using the form on the right." }}</p>
+            </div>
+          </div>
+
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Key Skills</h5></div>
+            <div class="card-body">
+              {% if overview.key_skills %}
+                <ul class="mb-0">
+                  {% for skill in overview.key_skills|split:"," %}
+                    <li>{{ skill }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="mb-0 text-muted">No skills added yet.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Education -->
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Education</h5></div>
+            <div class="card-body">
+              {% for edu in education %}
+                <p class="mb-1">
+                  <strong>{{ edu.examination }} - {{ edu.university_board }}</strong><br>
+                  Marks: {{ edu.percentage }}% <br> Year of Passing: {{ edu.year_of_passing }}
+                </p>
+              {% empty %}
+                <p class="mb-0 text-muted">No education details added yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Semester Results -->
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Semester Performance</h5></div>
+            <div class="card-body">
+              {% if semester_results %}
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Semester</th>
+                      <th>Pointer</th>
+                      <th>KT(s)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for s in semester_results %}
+                      <tr>
+                        <td>{{ s.semester }}</td>
+                        <td>{{ s.pointer }}</td>
+                        <td>{{ s.no_of_kt }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              {% else %}
+                <p class="mb-0 text-muted">No semester results added yet.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Experience / Projects / Certifications / Publications / Achievements -->
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Internships / PBL</h5></div>
+            <div class="card-body">
+              {% for i in internships %}
+                <p class="mb-1">
+                    <strong>{{ i.title }}</strong> at {{ i.company_name }} from <strong>{{i.start_date}}</strong> to <strong>{{i.end_date}}</strong> (<i>{{ i.no_of_days }} days</i>)
+                </p>
+              {% empty %}
+                <p class="mb-0 text-muted">No internships added yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Projects</h5></div>
+            <div class="card-body">
+              {% for p in projects %}
+                <p class="mb-1">
+                  <strong>{{ p.title }}</strong> ({{ p.project_type }}) - {{ p.details|truncatewords:20 }}
+                </p>
+              {% empty %}
+                <p class="mb-0 text-muted">No projects added yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Certifications / Courses</h5></div>
+            <div class="card-body">
+              {% for c in certifications %}
+                <p class="mb-1">
+                  <strong>{{ c.title }}</strong> - {{ c.certifying_authority }} from <strong>{{c.start_date}}</strong> to <strong>{{c.end_date}}</strong> (<i>{{ c.no_of_days }} days</i>)
+                </p>
+              {% empty %}
+                <p class="mb-0 text-muted">No certifications added yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Publications</h5></div>
+            <div class="card-body">
+              {% for pub in publications %}
+                <p class="mb-1">
+                    <strong>{{ pub.title }}</strong> ({{ pub.type }} - {{ pub.level }} Level) <strong class="mx-2"><i>Authors: {{pub.authors}}</i></strong>
+                </p>
+              {% empty %}
+                <p class="mb-0 text-muted">No publications added yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Achievements</h5></div>
+            <div class="card-body">
+                <p class="mb-1">Sports/Cultural:</p>
+                  {% for s in sports %}
+                      <ul>
+                        <li><strong>{{ s.name_of_event }}</strong> - {{ s.prize_won }} (Level - {{s.level}})</li>
+                      </ul>
+                  {% endfor %}
+                    <p class="mb-1">Other:</p>
+                  {% for o in other_events %}
+                    <ul class="mb-1">
+                        <li><strong>{{ o.name_of_event }}</strong> - {{ o.prize_won }} (Level - {{o.level}})</li>
+                    </ul>
+                  {% endfor %}
+                  {% if not sports and not other_events %}
+                    <p class="mb-0 text-muted">No achievements added yet.</p>
+                  {% endif %}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right column: Edit Overview Form, Interests, Long Term Goal -->
+        <div class="col-md-4">
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Edit Overview</h5></div>
+            <div class="card-body">
+              <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                  <label class="form-label">Professional Summary</label>
+                  {{ form.profile_summary }}
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Key Skills (comma separated)</label>
+                  {{ form.key_skills }}
+                </div>
+                <div class="form-check mb-3">
+                  {{ form.is_public }}
+                  <label class="form-check-label ms-1">Make my portfolio publicly viewable</label>
+                </div>
+                <button type="submit" class="btn btn-success w-100">
+                  Save Overview
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Long Term Goal</h5></div>
+            <div class="card-body">
+              {% if long_term_goal %}
+                <p><strong>{{ long_term_goal.get_plan_display }}</strong></p>
+                <p class="mb-0">{{ long_term_goal.reason }}</p>
+              {% else %}
+                <p class="mb-0 text-muted">No long term goal added yet.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="card mb-4 p-0">
+            <div class="card-header"><h5 class="mb-0">Interests</h5></div>
+            <div class="card-body">
+              {% if interests %}
+                <p>{{ interests.interests|join:", " }}</p>
+              {% else %}
+                <p class="mb-0 text-muted">No interests selected yet.</p>
+              {% endif %}
+              {% if subjects %}
+                <hr>
+                <p class="mb-1"><strong>Subjects of Interest:</strong></p>
+                <ul class="mb-0">
+                  {% for s in subjects %}
+                    <li>{{ s.subject }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

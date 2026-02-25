@@ -1,0 +1,74 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %} Uploaded Documents {% endblock %}
+{% block content %}
+{% include "menti/mentee_sidebar.html" %}
+<div class="d-flex">
+    <div class="content shifted flex-grow-1">
+        <div class="container mt-4">
+            <div class="d-flex align-items-center mb-4">
+                <h2 class="text-white p-3 bg-black rounded">
+                    <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                        <i id="sidebarIcon" class="bi bi-list"></i>
+                    </a>Your Uploaded Documents
+                </h2>
+            </div>
+            <div class="card shadow-sm bg-dark border-0 p-0">
+                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <h5 class="mb-0 fw-semibold" style="color: #fff;">All Uploaded Documents</h5>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mt-2 mt-md-0">
+                        {% if is_mentor_view == False %}
+                            {% if documents %}
+                            <a href="{% url 'download_all_uploaded_documents' %}" class="btn btn-success btn-sm">
+                                <i class="bi bi-download"></i> Download All
+                            </a>
+                            {% endif %}
+                        {% endif %}
+                        <span class="badge bg-primary-subtle text-primary">
+                            {{ documents|length }} Document{{ documents|length|pluralize }}
+                        </span>
+                    </div>
+                </div>
+                <table class="table table-bordered table-hover table-striped shadow-sm rounded">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Sr. No.</th>
+                            <th>Category</th>
+                            <th>Document Name</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ doc.category }}</td>
+                            <td>{{ doc.name }}</td>
+                            <td>
+                                <a href="{{ doc.file.url }}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i> View</a>
+                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-success mt-1" download><i class="bi bi-download"></i> Download</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No documents uploaded yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+            <a href="{% url 'student_interests' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                <i class="bi bi-arrow-left-circle"></i> Prev
+            </a>
+            <a href="{% url 'credits' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                Next <i class="bi bi-arrow-right-circle"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

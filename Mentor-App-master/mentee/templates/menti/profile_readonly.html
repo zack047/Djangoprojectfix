@@ -1,0 +1,119 @@
+{% load static %}
+<br>
+<div class="card shadow-sm border-0 p-0">
+  <div class="card-header bg-dark text-white">
+    <h4 class="mb-0">Student Profile</h4>
+  </div>
+
+  <div class="card-body">
+    <!-- Personal Info -->
+    <h5 class="fw-bold mt-3">Personal Information</h5>
+    <hr style="border:none; border:1px dashed #000; opacity:1;">
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Moodle ID:</strong> {{ profile.moodle_id }}</p>
+      </div>
+      <div class="col-md-6">
+        <strong>Profile Image:</strong><br>
+        {% if profile.image %}
+          <img src="{{ profile.image.url }}" class="img-thumbnail" width="120">
+        {% else %}
+          <img src="{% static 'default.jpg' %}" class="img-thumbnail" width="120">
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Student Name:</strong> {{ profile.student_name }}</p>
+      </div>
+      <div class="col-md-3">
+        <p class="form-control-plaintext"><strong>Semester:</strong> {{ profile.semester }}</p>
+      </div>
+      <div class="col-md-3">
+        <p class="form-control-plaintext"><strong>Year:</strong> {{ profile.year }}</p>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Branch:</strong> {{ profile.branch }}</p>
+      </div>
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Date of Birth:</strong> {{ profile.dob|date:"d-m-Y" }}</p>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <p class="form-control-plaintext"><strong>Address:</strong> {{ profile.address }}</p>
+    </div>
+
+    <!-- Contact Info -->
+    <h5 class="fw-bold mt-4">Contact Information</h5>
+    <hr style="border:none; border:1px dashed #000; opacity:1;">
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Contact Number:</strong> {{ profile.contact_number }}</p>
+      </div>
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Email:</strong> {{ profile.user.email }}</p>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Hobby:</strong> {{ profile.hobby }}</p>
+      </div>
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>About Me:</strong> {{ profile.about_me }}</p>
+      </div>
+    </div>
+
+    <!-- Family Info -->
+    <h5 class="fw-bold mt-4">Family Information</h5>
+    <hr style="border:none; border:1px dashed #000; opacity:1;">
+
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <p class="form-control-plaintext"><strong>Mother's Name:</strong> {{ profile.mother_name }}</p>
+      </div>
+      <div class="col-md-4">
+        <p class="form-control-plaintext"><strong>Occupation:</strong> {{ profile.mother_occupation }}</p>
+      </div>
+      <div class="col-md-4">
+        <p class="form-control-plaintext"><strong>Contact:</strong> {{ profile.mother_contact }}</p>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <p class="form-control-plaintext"><strong>Father's Name:</strong> {{ profile.father_name }}</p>
+      </div>
+      <div class="col-md-4">
+        <p class="form-control-plaintext"><strong>Occupation:</strong> {{ profile.father_occupation }}</p>
+      </div>
+      <div class="col-md-4">
+        <p class="form-control-plaintext"><strong>Contact:</strong> {{ profile.father_contact }}</p>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Sibling 1:</strong> {{ profile.sibling1_name }}</p>
+      </div>
+      <div class="col-md-6">
+        <p class="form-control-plaintext"><strong>Sibling 2:</strong> {{ profile.sibling2_name }}</p>
+      </div>
+    </div>
+
+    <!-- Career Info -->
+    <h5 class="fw-bold mt-4">Career Information</h5>
+    <hr style="border:none; border:1px dashed #000; opacity:1;">
+
+    <div class="mb-3">
+      <p class="form-control-plaintext"><strong>Career Domain:</strong> {{ profile.career_domain }}</p>
+    </div>
+  </div>
+</div>

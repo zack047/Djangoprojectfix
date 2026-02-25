@@ -1,0 +1,71 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+{% block title %} My Meetings {% endblock %}
+
+{% block content %}
+<br>
+  <div class="row">
+        <div class="col-md-12">
+             <div class="content-section">
+                  <h2 class="text-light mb-3">My Meetings</h2>
+
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead class="table-dark table-bordered">
+                        <tr>
+                          <th>Sr. No.</th>
+                          <th>Mentor</th>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Status</th>
+                          <th>Join</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+
+                      {% for meeting in meetings %}
+                        <tr>
+                          <td>{{ forloop.counter }}</td>
+                          <td>{{ meeting.mentor.name|default:meeting.mentor.user.username }}</td>
+                          <td>{{ meeting.appointment_date }}</td>
+                          <td>{{ meeting.time_slot }}</td>
+                          <td>
+                            {% if meeting.status == 'scheduled' %}
+                              <span class="badge bg-warning text-dark">Scheduled</span>
+                            {% else %}
+                              <span class="badge bg-success">Completed</span>
+                            {% endif %}
+                          </td>
+                          <td>
+                            {% if now >= meeting.meeting_datetime and now <= meeting.meeting_end_datetime %}
+                                <a href="{% url 'join_meeting' meeting.id %}" class="btn btn-primary btn-sm">
+                                    Join
+                                </a>
+                            {% else %}
+                                <button class="btn btn-secondary btn-sm" disabled>
+                                    Unavailable
+                                </button>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="6" class="text-center text-muted">
+                            No meetings scheduled.
+                          </td>
+                        </tr>
+                      {% endfor %}
+
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+        </div>
+  </div>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+    <a href="{% url 'module-message' %}"
+       class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+        <i class="bi bi-arrow-left-circle"></i> Back
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'mentor/base1.html' %}
+{% load widget_tweaks %}
+{% load static %}
+{% block title %} Profile {% endblock %}
+{% block content %}
+<div class="d-flex">
+  <!-- Sidebar -->
+  <!-- Main Content -->
+  <div class="content flex-grow-1 p-4">
+    <div class="container mt-3">
+      <div class="card shadow-sm border-0">
+
+        <!-- Card Header -->
+        <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
+            <button id="toggleSidebarBtn"
+                  class="btn header-btn border-0 me-3 d-flex align-items-center justify-content-center"
+                  style="width:40px; height:40px;">
+            <i id="sidebarIcon" class="bi bi-list fs-4"></i>
+            </button>
+            <h4 class="mb-0 fw-semibold">Update Profile</h4>
+        </div>
+
+        <!-- Body (Form) -->
+        <div class="card-body">
+          <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Profile Picture</label>
+              {{ form.image|add_class:"form-control" }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Username</label>
+              {{ form.username|add_class:"form-control" }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Name</label>
+              {{ form.name|add_class:"form-control" }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              {{ form.email|add_class:"form-control" }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Department</label>
+              {{ form.department|add_class:"form-select" }}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Expertise</label>
+              {{ form.expertise|add_class:"form-control" }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg">Save Changes</button>
+          </div>
+        </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.card {
+  background: #121212;
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+.card-body {
+  background: #fff;
+  z-index: 1;
+}
+.header-dark {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  background: rgba(0,0,0,0.9) !important;
+  color: #fff !important;
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  padding: 1rem;
+}
+.header-dark h4,
+.header-dark i { color: #fff !important; }
+.card-body { padding-top: 80px; position: relative; z-index: 1; }
+
+h5.fw-bold { color: #000; font-size: 1.1rem; }
+.form-label { font-weight: 600; color: #000; }
+.form-control, .form-select {
+  border-radius: 10px; border: 1px solid #ddd; padding: 10px 14px;
+  transition: all 0.2s ease-in-out;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #f0f2f5;
+  box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.25);
+}
+.btn { border-radius: 12px; font-weight: 500; transition: transform 0.2s; }
+.btn:hover { transform: translateY(-2px); }
+
+    /* Dropdown toggle icon animation */
+    .toggle-icon {
+        transition: transform 0.3s ease-in-out;
+    }
+    a[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .slide-toggle {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease; /* smooth slide */
+    }
+
+    .slide-toggle.show {
+        max-height: 800px; /* set bigger than your form height */
+    }
+</style>
+{% endblock %}

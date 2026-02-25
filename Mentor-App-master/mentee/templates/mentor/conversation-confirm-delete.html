@@ -1,0 +1,18 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %} Delete Conversation {% endblock %}
+{% block content %}
+<br>
+ <div class="row">
+     <div class="col-md-12">
+         <div class="content-section">
+             <h1>Delete Conversation</h1>
+             <form method="post">
+                {% csrf_token %}
+                <input type="submit" class="btn btn-danger" value="delete">
+                <a class="btn btn-secondary" href="{% url 'conv1' %}">Cancel</a>
+             </form>
+         </div>
+     </div>
+ </div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %} Change Password {% endblock %}
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <form method="post" class="form shadow p-4 bg-light rounded" id="form">
+        {% csrf_token %}
+        <h4 class="mb-4 text-center">Change Password</h4>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-info">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="form-group mb-3 position-relative">
+            <label for="new_password">New Password</label>
+            <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Enter new password" required>
+
+            <i class="fa fa-eye position-absolute toggle-icon" data-target="new_password"
+               style="right: 15px; top: 70%; transform: translateY(-50%); cursor: pointer;"></i>
+        </div>
+
+        <div class="form-group mb-3 position-relative">
+            <label for="reconfirm_password">Re-enter New Password</label>
+            <input type="password" name="reconfirm_password" id="reconfirm_password" class="form-control" placeholder="Confirm new password" required>
+
+            <i class="fa fa-eye position-absolute toggle-icon" data-target="reconfirm_password"
+               style="right: 15px; top: 70%; transform: translateY(-50%); cursor: pointer;"></i>
+        </div>
+
+
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+
+        <div class="text-center">
+            <button class="btn btn-primary w-100" type="submit">Update Password</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.querySelectorAll(".toggle-icon").forEach(icon => {
+    icon.addEventListener("click", function () {
+        const inputId = this.getAttribute("data-target");
+        const input = document.getElementById(inputId);
+
+        if (input.type === "password") {
+            input.type = "text";
+            this.classList.remove("fa-eye");
+            this.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            this.classList.remove("fa-eye-slash");
+            this.classList.add("fa-eye");
+        }
+    });
+});
+</script>
+{% endblock %}

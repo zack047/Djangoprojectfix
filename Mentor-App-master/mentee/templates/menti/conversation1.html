@@ -1,0 +1,995 @@
+{% extends is_mentor_view|yesno:"mentor/base1.html,menti/base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %} Chat {% endblock %}
+
+{% block content %}
+<style>
+/* your CSS (kept same as before for look) */
+.chat-wrapper { display:flex; flex-direction:column; height:100vh; }
+.chat-header { background:#202c33; color:white; padding:15px; font-size:18px; display:flex; align-items:center; gap:10px; }
+.chat-header .status { font-size:13px; color:#8ecae6; }
+.chat-body { flex:1; overflow-y:auto; padding:20px; background:#0b141a; }
+.msg-row { display:flex; margin-bottom:12px; }
+.msg-row.right { justify-content:flex-end; } .msg-row.left { justify-content:flex-start; }
+.msg-bubble { padding:10px 15px; border-radius:12px; max-width:65%; position:relative; }
+.msg-right { background:#005c4b; color:white; } .msg-left { background:#202c33; color:white; }
+.msg-time { font-size:10px; margin-top:3px; opacity:0.7; }
+.msg-meta { font-size:10px; opacity:0.7; margin-top:6px; display:flex; gap:8px; align-items:center; }
+.chat-input-bar { background:#202c33; padding:12px; display:flex; align-items:center; gap:10px; }
+.chat-input-bar input[type=text] { flex:1; border-radius:25px; border:none; padding:10px 15px; background:#2a3942; color:white; }
+.chat-input-bar button { background:#005c4b; color:white; border:none; padding:10px 15px; border-radius:50%; }
+.progress-inline { display:inline-block; vertical-align:middle; margin-left:8px; }
+.btn-small { padding:4px 8px; border-radius:6px; font-size:12px; border:none; cursor:pointer; }
+.btn-danger { background:#c82333; color:white; }
+.btn-light { background:#f1f1f1; color:#111; }
+
+.typing-dots {
+    display: inline-block;
+}
+
+.typing-dots span {
+    height: 6px;
+    width: 6px;
+    background: #8ecae6;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 3px;
+    animation: bounce 1.3s infinite;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+}
+
+
+/* file preview inside bubble */
+.msg-bubble img.inline-file {
+  max-width: 220px;
+  max-height: 220px;
+  display: block;
+  margin-top: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* small file box for non-images */
+.msg-file-box {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* download button */
+.msg-file-box a.download-btn {
+  margin-left: auto;
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 6px;
+  color: #8ecae6;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+/* ticks styling */
+.msg-seen {
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+/* typing indicator tweaks */
+.typing-dots { display:inline-block; vertical-align:middle; }
+.typing-dots span { height:6px; width:6px; border-radius:50%; display:inline-block; margin-right:4px; background:#8ecae6; animation: bounce 1.2s infinite; opacity:0.95; }
+.typing-dots span:nth-child(2){ animation-delay: .15s; } .typing-dots span:nth-child(3){ animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{ transform:translateY(0);} 40%{ transform:translateY(-6px);} }
+
+
+.jump-latest-btn {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  background: #005c4b;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: opacity .25s ease;
+  z-index: 50;
+}
+.jump-latest-btn:hover {
+  background: #007b63;
+}
+.search-hit {
+  background: #ffd54f;
+  color: #111;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.search-current {
+  animation: searchPulse 1.2s ease-in-out infinite;
+  background: #ffb703;
+  color: #111;
+}
+
+@keyframes searchPulse {
+  0%   { box-shadow: 0 0 0px rgba(255,183,3, 0.6); }
+  50%  { box-shadow: 0 0 10px rgba(255,183,3, 0.9); }
+  100% { box-shadow: 0 0 0px rgba(255,183,3, 0.6); }
+}
+</style>
+
+<div class="chat-wrapper"><br><br><br>
+  <div class="chat-header">
+    {% if conv.sender.mentor.image  %}
+      <img src="{{ conv.sender.mentor.image.url }}" width="50" height="50" style="border-radius:50%;">
+    {% else %}
+      <img src="/media/default.png" width="40" height="40" style="border-radius:50%;">
+    {% endif %}
+    <div>
+      {% if conv.sender.mentor.name %}
+      <div><strong>{{ conv.sender.mentor.name }}</strong></div>
+      {% else %}
+      <div><strong>{{ conv.sender.username }}</strong></div>
+      {% endif %}
+      <div class="status" id="presence-status">offline</div>
+    </div>
+    <!--Search in chat-->
+      <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+          <span id="searchCounter" style="font-size:12px; color:#8ecae6; display:none;">0 / 0</span>
+          <input
+            type="text"
+            id="chatSearchInput"
+            placeholder="Search…"
+            style="display:none; padding:6px 10px; border-radius:6px; border:none; outline:none; background:#2a3942; color:white; font-size:13px; width:160px;"
+          >
+          <button
+            id="searchUpBtn"
+            style="display:none; background:none; border:none; color:white; font-size:16px; cursor:pointer;"
+            title="Previous"
+          >⬆️</button>
+          <button
+            id="searchDownBtn"
+            style="display:none; background:none; border:none; color:white; font-size:16px; cursor:pointer;"
+            title="Next"
+          >⬇️</button>
+          <button
+            id="chatSearchBtn"
+            style="background:none; border:none; color:white; font-size:18px; cursor:pointer;"
+            title="Search"
+          >🔍</button>
+      </div>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    {% for r in conv.get_replies %}
+  <div class="msg-row {% if r.sender == user %}right{% else %}left{% endif %}">
+    <div class="msg-bubble {% if r.sender == user %}msg-right{% else %}msg-left{% endif %}"
+         data-reply-id="{{ r.id }}"
+         data-replied-at="{{ r.replied_at|date:'c' }}"
+         data-sent-by="{{ r.sender.id }}"
+         data-seen-count="{{ r.seen_by.count }}">
+      <div class="msg-text">{{ r.reply|safe }}
+        {% if r.edited %}
+            <small style="opacity:.6;">(edited)</small>
+        {% endif %}
+      </div>
+
+      {% if r.file %}
+        <!-- keep original file link for fallback (JS will create inline preview) -->
+        <div class="msg-file" data-file-url="{{ r.file.url }}">📎 <a href="{{ r.file.url }}" target="_blank" style="color:#8ecae6;">{{ r.file.name|cut:"chat_files/" }}</a></div>
+      {% endif %}
+
+      <div class="msg-meta">
+        <span class="msg-time"></span>
+        <span class="msg-seen"
+      data-seen-count="{{ r.seen_by.count }}"
+      data-sent-by="{{ r.sender.id }}">
+</span>
+
+      </div>
+
+      {% if r.sender == user %}
+        <div style="margin-top:6px; display:flex; gap:6px;">
+          <button class="btn-small btn-light" onclick="openEditPrompt({{ r.id }}, this)">Edit</button>
+          <button class="btn-small btn-danger" onclick="deleteMessage({{ r.id }})">Delete</button>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+
+
+    <div id="typing-indicator" style="color:#8ecae6; font-size:13px; margin:10px 0;"></div>
+  </div>
+
+  <div class="chat-input-bar">
+    <input type="text" id="chatInput" placeholder="Type a message">
+    <input type="file" id="fileInput" style="display:none;">
+    <div id="filePreviewContainer" style="padding:8px;"></div>
+    <button data-role="choose-file" title="Attach">📎</button>
+    <button data-role="send" id="sendBtn" title="Send">➤</button>
+  </div>
+    <button id="jumpToLatest" class="jump-latest-btn" style="display:none;">↓ New Messages</button>
+</div>
+
+<script>
+
+/* Globals that backend templates fill */
+const userId = "{{ request.user.id }}";
+const convId = "{{ conv.pk }}";
+const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${convId}/`);
+
+const chatBody = document.getElementById("chatBody");
+const chatInput = document.getElementById("chatInput");
+const fileInput = document.getElementById("fileInput");
+const filePreviewContainer = document.getElementById("filePreviewContainer");
+const typingIndicator = document.getElementById("typing-indicator");
+const presenceStatus = document.getElementById("presence-status");
+
+/* defensive guards */
+if (!chatBody) {
+  console.error("chatBody not found in DOM — chat will not work.");
+}
+
+/* --- Jump to latest button (created dynamically) --- */
+let jumpBtn = document.getElementById('jumpToLatest');
+if (!jumpBtn) {
+  jumpBtn = document.createElement('button');
+  jumpBtn.id = 'jumpToLatest';
+  jumpBtn.className = 'jump-latest-btn';
+  jumpBtn.style.display = 'none';
+  /* Inline styles so you don't need to modify CSS file (change as you like) */
+  jumpBtn.style.position = 'fixed';
+  jumpBtn.style.bottom = '92px';
+  jumpBtn.style.right = '24px';
+  jumpBtn.style.background = '#005c4b';
+  jumpBtn.style.color = '#fff';
+  jumpBtn.style.border = 'none';
+  jumpBtn.style.padding = '8px 12px';
+  jumpBtn.style.borderRadius = '20px';
+  jumpBtn.style.fontSize = '13px';
+  jumpBtn.style.cursor = 'pointer';
+  jumpBtn.style.boxShadow = '0 6px 16px rgba(0,0,0,0.35)';
+  jumpBtn.style.zIndex = 9999;
+  jumpBtn.textContent = '↓ New messages';
+  document.body.appendChild(jumpBtn);
+}
+
+/* Smooth scroll helper */
+function smoothScrollToBottom() {
+  if (!chatBody) return;
+  try {
+    chatBody.scrollTo({
+      top: chatBody.scrollHeight,
+      behavior: "smooth"
+    });
+  } catch (e) {
+    // fallback
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+}
+
+/* --- Smart auto-scroll (doesn't yank user) --- */
+let shouldAutoScroll = true;
+let unseenCount = 0; // number of incoming messages while user is scrolled up
+
+if (chatBody) {
+  chatBody.addEventListener("scroll", () => {
+    const distanceFromBottom = chatBody.scrollHeight - (chatBody.scrollTop + chatBody.clientHeight);
+    const nearBottom = distanceFromBottom < 150;
+    shouldAutoScroll = nearBottom;
+
+    if (nearBottom) {
+      unseenCount = 0;
+      jumpBtn.style.display = 'none';
+      jumpBtn.textContent = '↓ New messages';
+    } else {
+      // show jump button (but do not animate it here)
+      if (jumpBtn.style.display === 'none') jumpBtn.style.display = 'block';
+    }
+  });
+}
+
+/* Wire jump button */
+jumpBtn.addEventListener('click', () => {
+  smoothScrollToBottom();
+  unseenCount = 0;
+  jumpBtn.style.display = 'none';
+  jumpBtn.textContent = '↓ New messages';
+});
+
+/* Replace old smartScroll to use smooth */
+function smartScroll() {
+  if (shouldAutoScroll) {
+    smoothScrollToBottom();
+  } else {
+    // if we are not auto-scrolling, show the jump button and bump count
+    unseenCount++;
+    jumpBtn.style.display = 'block';
+    jumpBtn.textContent = `↓ ${unseenCount} new`;
+  }
+}
+
+/* --- timestamp formatting helper --- */
+function formatTimestamp(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  const now = new Date();
+  const diffMs = now - d;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const isSameDay = d.toDateString() === now.toDateString();
+
+  if (diffSec < 10) return 'Just now';
+  if (diffMin < 1) return `${diffSec}s`;
+  if (diffMin < 60) return `${diffMin}m`;
+  if (isSameDay) {
+    // show HH:MM am/pm
+    let hh = d.getHours();
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12 || 12;
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    return `${hh}:${mm} ${ampm}`;
+  }
+  // older: 02 Feb 2025, 04:05 PM
+  const day = String(d.getDate()).padStart(2,'0');
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const month = monthNames[d.getMonth()];
+  let hh = d.getHours();
+  const ampm = hh >= 12 ? 'PM' : 'AM';
+  hh = hh % 12 || 12;
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return `${day} ${month} ${d.getFullYear()}, ${hh}:${mm} ${ampm}`;
+}
+
+/* --- File preview selected in input --- */
+fileInput.addEventListener('change', () => {
+  filePreviewContainer.innerHTML = "";
+  const f = fileInput.files[0];
+  if (!f) return;
+  const ext = f.name.split('.').pop().toLowerCase();
+  if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+    const img = document.createElement('img');
+    img.style.maxWidth = '120px';
+    img.style.borderRadius = '6px';
+    const r = new FileReader();
+    r.onload = ev => img.src = ev.target.result;
+    r.readAsDataURL(f);
+    filePreviewContainer.appendChild(img);
+  } else {
+    const p = document.createElement('div');
+    p.textContent = `Ready to upload: 📄 ${f.name}`;
+    p.style.color = "#8ecae6";
+    p.style.fontSize = "14px";
+    p.style.marginBottom = "8px";
+    filePreviewContainer.appendChild(p);
+  }
+  const rem = document.createElement('button');
+  rem.className = 'btn-small';
+  rem.textContent = 'Remove';
+  rem.style.marginLeft = '8px';
+  rem.onclick = () => { fileInput.value = ''; filePreviewContainer.innerHTML=''; };
+  filePreviewContainer.appendChild(rem);
+});
+
+/* CSRF */
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i=0;i<cookies.length;i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+/* Upload with progress */
+function sendFileAndText(){
+  const text = chatInput.value.trim();
+  const file = fileInput.files[0];
+  if (!text && !file) return;
+
+  const form = new FormData();
+  form.append('reply', text);
+  if (file) form.append('file', file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '{% url "upload_reply" pk=conv.pk %}');
+  xhr.setRequestHeader('X-CSRFToken', csrftoken);
+
+  const progress = document.createElement('progress');
+  progress.max = 100;
+  progress.value = 0;
+  progress.className = 'progress-inline';
+  filePreviewContainer.appendChild(progress);
+
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      const percent = Math.round((e.loaded / e.total) * 100);
+      progress.value = percent;
+    }
+  };
+
+  xhr.onload = () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      // server will broadcast; clear input
+      chatInput.value = '';
+      fileInput.value = '';
+      filePreviewContainer.innerHTML = '';
+    } else {
+      alert('Upload failed');
+    }
+  };
+
+  xhr.onerror = () => alert('Upload failed (network).');
+  xhr.send(form);
+}
+
+/* Buttons wiring */
+document.querySelectorAll('.chat-input-bar button').forEach(btn => {
+  btn.addEventListener('click', (ev) => {
+    if (ev.currentTarget.dataset.role === "choose-file") {
+      fileInput.click();
+      return;
+    }
+    sendFileAndText();
+  });
+});
+document.querySelector('.chat-input-bar').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendFileAndText();
+  }
+});
+
+/* Typing indicator (debounced) */
+let typingTimer = null;
+let typingState = false;
+chatInput.addEventListener('input', () => {
+  if (!typingState) {
+    typingState = true;
+    ws.send(JSON.stringify({ action: 'typing', typing: true }));
+  }
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => {
+    typingState = false;
+    ws.send(JSON.stringify({ action: 'typing', typing: false }));
+  }, 900);
+});
+
+/* --- Edit / Delete (exposed globally so inline onclick works) --- */
+window.openEditPrompt = function(replyId, btnEl){
+  const bubble = btnEl.closest('.msg-bubble');
+  const currentTextEl = bubble.querySelector('.msg-text');
+  const currentText = (currentTextEl && currentTextEl.textContent) ? currentTextEl.textContent.trim() : '';
+  const newText = prompt("Edit message:", currentText);
+  if (newText === null) return;
+  const form = new FormData();
+  form.append('reply', newText);
+  fetch(`{% url 'edit_reply' pk=0 %}`.replace('/0/', `/${replyId}/`), {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrftoken },
+    body: form
+  }).then(r => r.json()).then(data => {
+    if (data.status === 'ok') {
+      applyEditedToDom(replyId, data.text, data.replied_at);
+    } else {
+      alert(data.message || 'Edit failed');
+    }
+  }).catch(()=>alert('Edit failed'));
+};
+
+window.deleteMessage = function(replyId){
+  if (!confirm("Delete this message?")) return;
+  fetch(`{% url 'delete_reply' pk=0 %}`.replace('/0/', `/${replyId}/`), {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrftoken }
+  }).then(r => r.json()).then(data => {
+    if (data.status === 'ok') {
+      const el = document.querySelector(`[data-reply-id="${replyId}"]`);
+      if (el) el.remove();
+    } else {
+      alert(data.message || 'Delete failed');
+    }
+  }).catch(()=>alert('Delete failed'));
+};
+
+/* apply edits locally */
+function applyEditedToDom(replyId, newText, newAt){
+  const el = document.querySelector(`[data-reply-id="${replyId}"]`);
+  if (!el) return;
+  const textEl = el.querySelector('.msg-text');
+  if (textEl) textEl.innerHTML = newText + ' <small style="opacity:.6">(edited)</small>';
+  const timeEl = el.querySelector('.msg-time');
+  if (timeEl && newAt) timeEl.textContent = formatTimestamp(newAt);
+}
+
+/* Mark delivered visually */
+function markDelivered(replyId){
+  const el = document.querySelector(`[data-reply-id="${replyId}"]`);
+  if (!el) return;
+  const seenEl = el.querySelector('.msg-seen');
+  if (!seenEl) return;
+  // one tick grey
+  seenEl.textContent = '✔';
+  seenEl.style.color = '#777';
+}
+
+/* Incoming seen event processing */
+function handleSeenEvent(replyId, actorUserId){
+  const msgEl = document.querySelector(`[data-reply-id="${replyId}"]`);
+  if (!msgEl) return;
+  const seenEl = msgEl.querySelector('.msg-seen');
+  if (!seenEl) return;
+  const prev = parseInt(seenEl.getAttribute('data-seen-count') || '0', 10);
+  const now = prev + 1;
+  seenEl.setAttribute('data-seen-count', now);
+  // if seen by at least one other & not current user -> double-tick
+  if (now > 0) {
+    // double ticks
+    seenEl.textContent = '✔✔';
+    // If current user is the owner and someone else saw, show blue ticks
+    if (String(actorUserId) !== String(userId)) {
+      seenEl.style.color = '#25D366'; // WhatsApp-ish green/blue
+    } else {
+      seenEl.style.color = '#777';
+    }
+  }
+}
+
+/* Safe wrapper for ws.send to avoid errors when socket closed */
+function safeSendWS(obj) {
+  try {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(obj));
+    }
+  } catch (e) {
+    console.warn("WebSocket send failed:", e);
+  }
+}
+
+/* Visibility helper for sending 'seen' only when displayed */
+const visibleObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const replyId = el.getAttribute('data-reply-id');
+      // notify server that this message is seen
+      if (String(el.getAttribute('data-sent-by')) !== String(userId)) {
+        ws.send(JSON.stringify({ action: 'seen', reply_id: replyId }));
+      }
+      // we don't unobserve — messages can be seen by multiple users
+    }
+  });
+}, { root: chatBody, threshold: 0.6 });
+
+
+/* ---------- Initialize pre-rendered messages on page load ---------- */
+function initExistingMessages() {
+  const bubbles = document.querySelectorAll('.msg-bubble[data-reply-id]');
+  bubbles.forEach(bubble => {
+    const replyId = bubble.getAttribute('data-reply-id');
+    const sentBy = bubble.getAttribute('data-sent-by');
+    const repliedAt = bubble.getAttribute('data-replied-at');
+    const seenCount = parseInt(bubble.getAttribute('data-seen-count') || '0', 10);
+
+    // 1) timestamp
+    const timeEl = bubble.querySelector('.msg-time');
+    if (timeEl) timeEl.textContent = formatTimestamp(repliedAt);
+
+    // 2) ticks
+    const seenEl = bubble.querySelector('.msg-seen');
+    if (seenEl) {
+      seenEl.setAttribute('data-seen-count', seenCount);
+      if (String(sentBy) === String(userId)) {
+        if (seenCount > 0) {
+          seenEl.textContent = '✔✔';
+          seenEl.style.color = '#25D366';
+        } else {
+          seenEl.textContent = '✔';
+          seenEl.style.color = '#777';
+        }
+      } else {
+        // don't show ticks on other people's received messages
+        seenEl.textContent = '';
+      }
+    }
+
+    // 3) existing file preview (if any)
+    const fileDataEl = bubble.querySelector('.msg-file');
+    const fileUrl = fileDataEl ? fileDataEl.getAttribute('data-file-url') : null;
+    if (fileUrl) {
+      // remove fallback link to avoid duplicate UI
+      fileDataEl.remove();
+
+      const parts = fileUrl.split('.');
+      const ext = parts.length ? parts[parts.length-1].toLowerCase() : '';
+      if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+        const img = document.createElement('img');
+        img.className = 'inline-file';
+        img.src = fileUrl;
+        img.alt = 'attachment';
+        img.onclick = () => window.open(fileUrl, '_blank');
+        bubble.insertBefore(img, bubble.querySelector('.msg-meta'));
+      }
+<!--      else if (ext === 'pdf') {-->
+<!--        const link = document.createElement('a');-->
+<!--        link.href = fileUrl;-->
+<!--        link.textContent = '📄 PDF Document';-->
+<!--        link.target = '_blank';-->
+<!--        bubble.insertBefore(link, bubble.querySelector('.msg-meta'));-->
+<!--      }-->
+      const fileBox = document.createElement('div');
+      fileBox.className = 'msg-file-box';
+      const nameEl = document.createElement('div');
+      nameEl.textContent = fileUrl.split('/').pop();
+      const dl = document.createElement('a');
+      dl.href = fileUrl;
+      dl.className = 'download-btn';
+      dl.setAttribute('download', '');
+      dl.textContent = 'Download';
+      fileBox.appendChild(nameEl);
+      fileBox.appendChild(dl);
+      bubble.insertBefore(fileBox, bubble.querySelector('.msg-meta'));
+    }
+
+    // 4) observe for seen if message is from other user
+    if (String(sentBy) !== String(userId)) {
+      visibleObserver.observe(bubble);
+    }
+  });
+}
+
+// call initialization once DOM is ready (script likely at bottom so DOM is ready)
+initExistingMessages();
+
+/* Wait a short bit to allow DOM images to layout then scroll */
+setTimeout(() => {
+  smoothScrollToBottom();
+}, 100);
+
+/* WebSocket handlers */
+ws.onopen = () => console.log('WS opened');
+ws.onclose = () => console.log('WS closed');
+ws.onerror = (err) => console.warn('WS error', err);
+
+ws.onmessage = (evt) => {
+  let data;
+  try {
+    data = JSON.parse(evt.data);
+  } catch (e) {
+    console.warn("Invalid WS JSON", e);
+    return;
+  }
+  const event = data.action || data.type;
+
+  if (event === 'new_message') {
+    renderMessage(data.message);
+    // if it's not sent by me, schedule seen ack when visible
+    if (String(data.message.sender_id) !== String(userId)) {
+      // add observer so when it becomes visible we mark it seen
+      const el = document.querySelector(`[data-reply-id="${data.message.id}"]`);
+      if (el) {
+        visibleObserver.observe(el);
+      }
+    } else {
+      // mark delivered
+      markDelivered(data.message.id);
+    }
+  }
+
+  if (event === 'typing') {
+    if (data.typing) {
+      typingIndicator.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    } else {
+      typingIndicator.innerHTML = '';
+    }
+  }
+
+  if (event === 'presence') {
+    presenceStatus.textContent = data.joined ? 'online' : 'offline';
+  }
+
+  if (event === 'edited_message') {
+    const m = data.message;
+    applyEditedToDom(m.id, m.text, m.replied_at);
+  }
+
+  if (event === 'deleted_message') {
+    const id = data.message.id;
+    document.querySelector(`[data-reply-id="${id}"]`)?.remove();
+  }
+
+  if (event === 'seen' || event === 'seen_event') {
+    handleSeenEvent(data.reply_id, data.user_id);
+  }
+
+  if (event === 'reaction_event') {
+    // TODO: update reaction UI when you add reactions
+  }
+};
+
+/* Render server-sent message into DOM */
+function renderMessage(msg) {
+  if (!chatBody) return;
+
+  // avoid duplicate
+  if (document.querySelector(`[data-reply-id="${msg.id}"]`)) return;
+
+  const row = document.createElement('div');
+  row.className = 'msg-row ' + (String(msg.sender_id) === String(userId) ? 'right' : 'left');
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble ' + (String(msg.sender_id) === String(userId) ? 'msg-right' : 'msg-left');
+  bubble.setAttribute('data-reply-id', msg.id);
+  bubble.setAttribute('data-sent-by', String(msg.sender_id));
+  if (msg.replied_at) bubble.setAttribute('data-replied-at', msg.replied_at);
+  bubble.setAttribute('data-seen-count', msg.seen_count || 0);
+
+  // message text
+  const textDiv = document.createElement('div');
+  textDiv.className = 'msg-text';
+  textDiv.innerHTML = msg.text ? msg.text : '';
+  bubble.appendChild(textDiv);
+
+  // file handling: inline image or file box with download
+  if (msg.file_url) {
+    const parts = msg.file_url.split('.');
+    const ext = parts.length ? parts[parts.length-1].toLowerCase() : '';
+    if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+      const img = document.createElement('img');
+      img.className = 'inline-file';
+      img.src = msg.file_url;
+      img.alt = 'attachment';
+      img.onclick = () => window.open(msg.file_url, '_blank');
+      bubble.appendChild(img);
+
+      // download button under image
+      const fileBox = document.createElement('div');
+      fileBox.className = 'msg-file-box';
+      const nameEl = document.createElement('div');
+      nameEl.textContent = msg.file_url.split('/').pop();
+      const dl = document.createElement('a');
+      dl.href = msg.file_url;
+      dl.className = 'download-btn';
+      dl.setAttribute('download', '');
+      dl.textContent = 'Download';
+      fileBox.appendChild(nameEl);
+      fileBox.appendChild(dl);
+      bubble.appendChild(fileBox);
+
+    } else {
+      const fileBox = document.createElement('div');
+      fileBox.className = 'msg-file-box';
+      const nameEl = document.createElement('div');
+      nameEl.textContent = msg.file_url.split('/').pop();
+      const dl = document.createElement('a');
+      dl.href = msg.file_url;
+      dl.className = 'download-btn';
+      dl.setAttribute('download', '');
+      dl.textContent = 'Download';
+      fileBox.appendChild(nameEl);
+      fileBox.appendChild(dl);
+      bubble.appendChild(fileBox);
+    }
+  }
+
+  // meta (time + ticks)
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+
+  const time = document.createElement('span');
+  time.className = 'msg-time';
+  time.textContent = formatTimestamp(msg.replied_at);
+
+  const seen = document.createElement('span');
+  seen.className = 'msg-seen';
+  seen.setAttribute('data-seen-count', msg.seen_count || 0);
+
+  // ticks: if any seen_count -> double ticks (and color)
+  if (msg.seen_count && msg.seen_count > 0) {
+    seen.textContent = '✔✔';
+    seen.style.color = '#25D366';
+  } else {
+    // if message was sent by me assume at least delivered -> single tick gray
+    if (String(msg.sender_id) === String(userId)) {
+      seen.textContent = '✔';
+      seen.style.color = '#777';
+    } else {
+      seen.textContent = ''; // recipients don't show ticks on others' messages
+    }
+  }
+
+  meta.appendChild(time);
+  meta.appendChild(seen);
+  bubble.appendChild(meta);
+
+  // action buttons if this user is the sender
+  if (String(msg.sender_id) === String(userId)) {
+    const actions = document.createElement('div');
+    actions.style.marginTop = '6px';
+    actions.style.display = 'flex';
+    actions.style.gap = '6px';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-small btn-light';
+    editBtn.textContent = 'Edit';
+    editBtn.onclick = () => openEditPrompt(msg.id, editBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-small btn-danger';
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = () => deleteMessage(msg.id);
+
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    bubble.appendChild(actions);
+  }
+
+  row.appendChild(bubble);
+  chatBody.appendChild(row);
+
+  // observe this message for "seen" reporting if it's from another user
+  if (String(msg.sender_id) !== String(userId)) {
+    const el = document.querySelector(`[data-reply-id="${msg.id}"]`);
+    if (el) visibleObserver.observe(el);
+  }
+  // scroll logic
+  smartScroll();
+}
+
+
+// Search in chat logic
+const searchBtn = document.getElementById("chatSearchBtn");
+const searchInput = document.getElementById("chatSearchInput");
+const searchCounter = document.getElementById("searchCounter");
+const searchUpBtn = document.getElementById("searchUpBtn");
+const searchDownBtn = document.getElementById("searchDownBtn");
+
+let searchResults = [];
+let currentSearchIndex = -1;
+
+/* Toggle search bar */
+searchBtn.addEventListener("click", () => {
+  const visible = searchInput.style.display === "inline-block";
+
+  searchInput.style.display = visible ? "none" : "inline-block";
+  searchCounter.style.display = visible ? "none" : "inline-block";
+  searchUpBtn.style.display = visible ? "none" : "inline-block";
+  searchDownBtn.style.display = visible ? "none" : "inline-block";
+
+  if (!visible) {
+    searchInput.focus();
+  } else {
+    clearSearchHighlights();
+    searchCounter.textContent = "0 / 0";
+  }
+});
+
+/* Search on typing */
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.trim().toLowerCase();
+
+  clearSearchHighlights();
+  searchResults = [];
+  currentSearchIndex = -1;
+
+  if (!query) {
+    updateCounter();
+    return;
+  }
+
+  const messages = document.querySelectorAll(".msg-text");
+
+  messages.forEach(msg => {
+    const text = msg.textContent.toLowerCase();
+    if (text.includes(query)) {
+      highlightText(msg, query);
+      searchResults.push(msg.closest(".msg-bubble"));
+    }
+  });
+
+  jumpToResult(0);
+  updateCounter();
+});
+
+/* Keyboard navigation */
+searchInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    jumpToResult(currentSearchIndex + 1);
+  }
+
+  if (e.key === "Enter" && e.shiftKey) {
+    e.preventDefault();
+    jumpToResult(currentSearchIndex - 1);
+  }
+
+  if (e.key === "Escape") {
+    searchBtn.click();
+  }
+});
+
+/* Buttons */
+searchDownBtn.addEventListener("click", () => {
+  jumpToResult(currentSearchIndex + 1);
+});
+
+searchUpBtn.addEventListener("click", () => {
+  jumpToResult(currentSearchIndex - 1);
+});
+
+/* Highlight matches */
+function highlightText(el, query) {
+  const safe = el.textContent;
+  const regex = new RegExp(`(${query})`, "gi");
+  el.innerHTML = safe.replace(regex, `<span class="search-hit">$1</span>`);
+}
+
+/* Clear highlights */
+function clearSearchHighlights() {
+  document.querySelectorAll(".msg-text").forEach(el => {
+    el.innerHTML = el.textContent;
+  });
+}
+
+/* Jump to result */
+function jumpToResult(index) {
+  if (!searchResults.length) return;
+
+  if (index < 0) index = searchResults.length - 1;
+  if (index >= searchResults.length) index = 0;
+
+  currentSearchIndex = index;
+  const target = searchResults[currentSearchIndex];
+
+  // Remove previous glow
+  document.querySelectorAll(".search-current").forEach(el => {
+    el.classList.remove("search-current");
+  });
+
+  // Add glow to current match inside this bubble
+  const hit = target.querySelector(".search-hit");
+  if (hit) {
+    hit.classList.add("search-current");
+  }
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+  updateCounter();
+}
+
+/* Counter display */
+function updateCounter() {
+  if (!searchResults.length) {
+    searchCounter.textContent = "0 / 0";
+  } else {
+    searchCounter.textContent = `${currentSearchIndex + 1} / ${searchResults.length}`;
+  }
+}
+
+</script>
+{% endblock %}

@@ -1,0 +1,712 @@
+{% extends 'menti/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% load interest_filters %}
+{% block title %} Student Interests {% endblock %}
+{% block content %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
+    <!-- Main Content-->
+    <div class="content shifted flex-grow-1 p-4">
+          <div class="container mt-3">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-3">
+                <h2 class="text-white p-3 bg-black rounded">
+                    {% if is_mentor_view == False %}
+                    <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                        <i id="sidebarIcon" class="bi bi-list"></i>
+                    </a>
+                    {% endif %}
+                    Student Interests
+                </h2>
+            </div>
+            <hr>
+            <h4>Saved Interests</h4>
+            <ul>
+              {% for i in saved_interests %}
+                <li>{{ i|interest_label }}</li>
+              {% empty %}
+                <li>No interests saved yet.</li>
+              {% endfor %}
+            </ul>
+            {% if is_mentor_view == False %}
+            <hr>
+            <form method="post">
+              {% csrf_token %}
+            <!-- Post BE Examination Interests -->
+            <div class="section">
+              <div class="section-header">Post BE Examination Interests</div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="gre" name="interests" value="gre" class="mt-2"
+                             {% if "gre" in saved_interests %}checked{% endif %}>
+                      <label for="gre"><b>GRE</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Examination for pursuing masters abroad.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="gate" name="interests" value="gate" class="mt-2"
+                             {% if "gate" in saved_interests %}checked{% endif %}>
+                      <label for="gate"><b>GATE</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Examination for pursuing Master's Degree (M.Tech / MS) in India.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="coach" name="interests" value="coach" class="mt-2"
+                             {% if "coach" in saved_interests %}checked{% endif %}>
+                        <label for="coach"><b>Wants GATE/GRE Coaching from College?</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Are you interested in GATE coaching provided by college?<br>
+                        (Classes will be conducted at 7:00 A.M in the morning in weekdays)
+                    </div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="ent" name="interests" value="ent" class="mt-2"
+                             {% if "ent" in saved_interests %}checked{% endif %}>
+                      <label for="ent"><b>Entrepreneur</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Interested in creation of new business.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="hs" name="interests" value="hs" class="mt-2"
+                             {% if "hs" in saved_interests %}checked{% endif %}>
+                        <label for="hs"><b>Higher Studies</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Interested in other degrees after graduation.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="place" name="interests" value="place" class="mt-2"
+                             {% if "place" in saved_interests %}checked{% endif %}>
+                        <label for="place"><b>On-campus placements</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Interested in applying for companies visiting the institute for placements.</div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr style="border:none; border: 1px dashed #000; opacity:1;">
+            <!-- Honors / Minors -->
+            <div class="section">
+              <div class="section-header">Honors / Minors</div>
+              <div class="muted" style="color: #ff0000;">Select only one.</div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="cyber" name="interests" value="cyber" class="mt-2"
+                             {% if "cyber" in saved_interests %}checked{% endif %}>
+                        <label for="cyber"><b>Cyber Security</b><br>
+                            <span class="interest-desc text-muted" style="color: #666 !important;">Honours Degree for EXTC,COMP and IT </span><br><span class="interest-desc text-muted" style="color: #666 !important;"> Minor Degree for CIVIL and MECH</span></label>
+                    </div>
+                    <div class="interest-desc col-md-6"><a class="btn btn-outline-dark text-warning" href="https://drive.google.com/file/d/1wqwalohfUDuuH-UOXEgQWeigF0IlYQOo/view">Download</a></div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="robotics" name="interests" value="robotics" class="mt-2"
+                             {% if "robotics" in saved_interests %}checked{% endif %}>
+                      <label for="robotics"><b>Robotics</b><br>
+                          <span class="interest-desc text-muted" style="color: #666 !important;">Honours Degree for CIVIL and MECH </span><br><span class="interest-desc text-muted" style="color: #666 !important;"> Minors Degree for COMP,EXTC and IT</span></label>
+                    </div>
+                    <div class="interest-desc col-md-6"><a class="btn btn-outline-dark text-warning" href="https://drive.google.com/file/d/1TwYMzbKN_gmL7ZYP4YGyiSFupGtSXFRM/view">Download</a></div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="struct" name="interests" value="struct" class="mt-2"
+                             {% if "struct" in saved_interests %}checked{% endif %}>
+                      <label for="struct"><b>Professional Practices in Structural Engineering</b><br>
+                          <span class="interest-desc text-muted" style="color: #666 !important;">Honours Degree for CIVIL and MECH</span> <br><span class="interest-desc text-muted" style="color: #666 !important;"> Minors Degree for COMP,EXTC and IT</span></label>
+                    </div>
+                    <div class="interest-desc col-md-6"><a class="btn btn-outline-dark text-warning" href="#">Download</a></div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="aiml" name="interests" value="aiml" class="mt-2"
+                             {% if "aiml" in saved_interests %}checked{% endif %}>
+                        <label for="aiml"><b>Artificial Intelligence and Machine Learning</b><br>
+                            <span class="interest-desc text-muted" style="color: #666 !important;">Honours Degree COMP,EXTC and IT </span><br><span class="interest-desc text-muted" style="color: #666 !important;"> Minors Degree for CIVIL and MECH</span></label>
+                    </div>
+                    <div class="interest-desc col-md-6"><a class="btn btn-outline-dark text-warning" href="https://drive.google.com/file/d/18K-Rl563sjzTXZ_E_DF6_lpsPH6iNI--/view">Download</a></div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="iot" name="interests" value="iot" class="mt-2"
+                             {% if "iot" in saved_interests %}checked{% endif %}>
+                        <label for="iot"><b>Internet of Things(IoT)</b><br>
+                            <span class="interest-desc text-muted" style="color: #666 !important;">Honours Degree MECH,COMP,EXTC and IT</span><br><span class="interest-desc text-muted" style="color: #666 !important;"> Minors Degree for CIVIL</span></label>
+                    </div>
+                    <div class="interest-desc col-md-6"><a class="btn btn-outline-dark text-warning" href="https://drive.google.com/file/d/1FbmwKoLrBcvWeS-_JgrzYyo61QE4_n6I/view">Download</a></div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr>
+            <!-- Sports -->
+            <div class="section">
+              <div class="section-header">Sports</div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="athletics" name="interests" value="athletics" class="mt-2"
+                             {% if "athletics" in saved_interests %}checked{% endif %}>
+                      <label for="athletics"><b>Athletics</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="badminton" name="interests" value="badminton" class="mt-2"
+                             {% if "badminton" in saved_interests %}checked{% endif %}>
+                      <label for="badminton"><b>Badminton</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="table-tennis" name="interests" value="table-tennis" class="mt-2"
+                             {% if "table-tennis" in saved_interests %}checked{% endif %}>
+                      <label for="table-tennis"><b>Table Tennis</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="carrom" name="interests" value="carrom" class="mt-2"
+                             {% if "carrom" in saved_interests %}checked{% endif %}>
+                      <label for="carrom"><b>Carrom</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="chess" name="interests" value="chess" class="mt-2"
+                             {% if "chess" in saved_interests %}checked{% endif %}>
+                      <label for="chess"><b>Chess</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="kabaddi" name="interests" value="kabaddi" class="mt-2"
+                             {% if "kabaddi" in saved_interests %}checked{% endif %}>
+                      <label for="kabaddi"><b>Kabaddi</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="cricket" name="interests" value="cricket" class="mt-2"
+                             {% if "cricket" in saved_interests %}checked{% endif %}>
+                      <label for="cricket"><b>Cricket</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="football" name="interests" value="football" class="mt-2"
+                             {% if "football" in saved_interests %}checked{% endif %}>
+                      <label for="football"><b>Football</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="tug-of-war" name="interests" value="tug-of-war" class="mt-2"
+                             {% if "tug-of-war" in saved_interests %}checked{% endif %}>
+                      <label for="tug-of-war"><b>Tug of War</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="dodgeball" name="interests" value="dodgeball" class="mt-2"
+                             {% if "dodgeball" in saved_interests %}checked{% endif %}>
+                      <label for="dodgeball"><b>Dodgeball</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="volleyball" name="interests" value="volleyball" class="mt-2"
+                             {% if "volleyball" in saved_interests %}checked{% endif %}>
+                      <label for="volleyball"><b>Volleyball</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="throwball" name="interests" value="throwball" class="mt-2"
+                             {% if "throwball" in saved_interests %}checked{% endif %}>
+                      <label for="throwball"><b>Throwball</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="dancing" name="interests" value="dancing" class="mt-2"
+                             {% if "dancing" in saved_interests %}checked{% endif %}>
+                      <label for="dancing"><b>Dancing</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="singing" name="interests" value="singing" class="mt-2"
+                             {% if "singing" in saved_interests %}checked{% endif %}>
+                      <label for="singing"><b>Singing</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Practice session will be held in college.</div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr>
+            <!-- Volunteering Interest -->
+            <div class="section">
+              <div class="section-header">Volunteering Interest</div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="volunteer" name="interests" value="volunteer" class="mt-2"
+                             {% if "volunteer" in saved_interests %}checked{% endif %}>
+                        <label for="volunteer"><b>Volunteering</b><br></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Students have to volunteer for various college events/fests/clubs.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="leader" name="interests" value="leader" class="mt-2"
+                             {% if "leader" in saved_interests %}checked{% endif %}>
+                        <label for="leader"><b>Leadership</b><br></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Planning and organizing various college events/fests/clubs.</div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr>
+            <!-- Clubs -->
+            <div class="section">
+              <div class="section-header">APSIT Club Interests</div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="blockchain" name="interests" value="blockchain" class="mt-2"
+                             {% if "blockchain" in saved_interests %}checked{% endif %}>
+                      <label for="blockchain"><b>Blockchain</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Contribute towards developing APSIT's own cryptocurrency token.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="design" name="interests" value="design" class="mt-2"
+                             {% if "design" in saved_interests %}checked{% endif %}>
+                        <label for="design"><b>Design</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">To design magazines, brochures and posters for the Department.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="mac" name="interests" value="mac" class="mt-2"
+                             {% if "mac" in saved_interests %}checked{% endif %}>
+                      <label for="mac"><b>MAC Racing Club</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Design automotives in Institute.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="smart" name="interests" value="smart" class="mt-2"
+                             {% if "smart" in saved_interests %}checked{% endif %}>
+                      <label for="smart"><b>Smart City Club</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Automation activities of department/college using smart city concepts.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="web" name="interests" value="web" class="mt-2"
+                             {% if "web" in saved_interests %}checked{% endif %}>
+                      <label for="web"><b>Web Development</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Develop websites, web applications for APSIT.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="software-dev" name="interests" value="software-dev" class="mt-2"
+                             {% if "software-dev" in saved_interests %}checked{% endif %}>
+                      <label for="software-dev"><b>Software Development</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Develop softwares for APSIT.</div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr>
+            <!-- Ojus Interest -->
+            <div class="section">
+              <div class="section-header">OJUS Interests</div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="design-team" name="interests" value="design-team" class="mt-2"
+                             {% if "design-team" in saved_interests %}checked{% endif %}>
+                      <label for="design-team"><b>Design Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Design digital posters, logo, website's UI, etc.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="tech-team" name="interests" value="tech-team" class="mt-2"
+                             {% if "tech-team" in saved_interests %}checked{% endif %}>
+                        <label for="tech-team"><b>Technical Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Creation and maintenance of the Ojus cultural and sports websites.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="creative-team" name="interests" value="creative-team" class="mt-2"
+                             {% if "creative-team" in saved_interests %}checked{% endif %}>
+                      <label for="creative-team"><b>Creative Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">In charge of decoration and creative works needed for the event.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="photo-team" name="interests" value="photo-team" class="mt-2"
+                             {% if "photo-team" in saved_interests %}checked{% endif %}>
+                      <label for="photo-team"><b>Photography Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Capture the gist of OJUS through the lens.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="pub-team" name="interests" value="pub-team" class="mt-2"
+                             {% if "pub-team" in saved_interests %}checked{% endif %}>
+                      <label for="pub-team"><b>Publicity Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Oversee social media handles of the institute for achieve maximum reach.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="eve-team" name="interests" value="eve-team" class="mt-2"
+                             {% if "eve-team" in saved_interests %}checked{% endif %}>
+                      <label for="eve-team"><b>Event Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Responsible for event managements and communicating with other teams for proper execution.</div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr>
+            <!-- Student Council Interest -->
+            <div class="section">
+              <div class="section-header">Student Council Interest</div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="gen-sec" name="interests" value="gen-sec" class="mt-2"
+                             {% if "gen-sec" in saved_interests %}checked{% endif %}>
+                      <label for="gen-sec"><b>General Secretary</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Student head of the Student Council. Oversees all the activities within the council.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="gs-associate" name="interests" value="gs-associate" class="mt-2"
+                             {% if "gs-associate" in saved_interests %}checked{% endif %}>
+                        <label for="gs-associate"><b>General Secretary Associate</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Works together with the General Secretary.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="edit-team" name="interests" value="edit-team" class="mt-2"
+                             {% if "edit-team" in saved_interests %}checked{% endif %}>
+                      <label for="edit-team"><b>Editorial Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Content developer for all college events.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="creative-media-team" name="interests" value="creative-media-team" class="mt-2"
+                             {% if "creative-media-team" in saved_interests %}checked{% endif %}>
+                      <label for="creative-media-team"><b>Creative Media Team</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Digital platform: Maintaining social media handles, websites and Ojus page.<br>
+                        Non-Digital platform: Decoration of venue and creating flyers, posters, banners, etc.
+                    </div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="sports-sec" name="interests" value="sports-sec" class="mt-2"
+                             {% if "sports-sec" in saved_interests %}checked{% endif %}>
+                      <label for="sports-sec"><b>Sports Secretary</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Planning, management and execution of various sports events held at the college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="cult-sec" name="interests" value="cult-sec" class="mt-2"
+                             {% if "cult-sec" in saved_interests %}checked{% endif %}>
+                      <label for="cult-sec"><b>Cultural Secretary</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Planning, management and execution of various cultural events held at the college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="joint-cult-sec" name="interests" value="joint-cult-sec" class="mt-2"
+                             {% if "joint-cult-sec" in saved_interests %}checked{% endif %}>
+                      <label for="joint-cult-sec"><b>Joint Cultural Secretary</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Planning, management and execution of various cultural events held at the college.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="ladies-rep" name="interests" value="ladies-rep" class="mt-2"
+                             {% if "ladies-rep" in saved_interests %}checked{% endif %}>
+                      <label for="ladies-rep"><b>Ladies Representative</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Acts as a channel between APSIT female students and Institute Management.</div>
+                  </div>
+                </td></tr>
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="joint-ladies-rep" name="interests" value="joint-ladies-rep" class="mt-2"
+                             {% if "joint-ladies-rep" in saved_interests %}checked{% endif %}>
+                      <label for="joint-ladies-rep"><b>Joint Ladies Representative</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Acts as a channel between APSIT female students and Institute Management.</div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr>
+            <!-- Department Level Societies -->
+            <div class="section">
+              <div class="section-header">Department Level Societies<br><span class="muted">Example: CSA, CSI, IEEE</span></div>
+              <table class="interest-table">
+                <tr><td>
+                  <div class="interest-row">
+                    <div class="interest-left col-md-6">
+                      <input type="checkbox" id="society" name="interests" value="society" class="mt-2"
+                             {% if "society" in saved_interests %}checked{% endif %}>
+                      <label for="society"><b>Department Level Societies</b></label>
+                    </div>
+                    <div class="interest-desc col-md-6">Interests in various department level societies present in college.</div>
+                  </div>
+                </td></tr>
+              </table>
+            </div>
+            <hr>
+            <!-- Actions -->
+              <div class="actions col-md-1 mt-3">
+                <button type="submit" class="btn-submit">Submit</button>
+              </div>
+            </form>
+            <!-- Next / Prev Buttons-->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+                <a href="{% url 'semester_results' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    <i class="bi bi-arrow-left-circle"></i> Prev
+                </a>
+                <a href="{% url 'uploaded_documents' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    Next <i class="bi bi-arrow-right-circle"></i>
+                </a>
+            </div><br>
+            {% endif %}
+          </div>
+    </div>
+</div>
+
+<style>
+    body {
+      min-height: 100vh;
+      color: #212529; /* default dark text */
+      background: linear-gradient(135deg, #b8b8b8, #8d8d8d);
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background-attachment: fixed;
+    }
+
+    .section-header {
+      font-weight: 600;
+      font-size: 1.8rem;
+      color: #000;
+      margin-top: 2rem;
+      margin-bottom: .5rem;
+    }
+
+    .muted {
+      font-size: .9rem;
+      color: #666;
+      margin-bottom: .75rem;
+    }
+
+    .interest-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+    }
+
+    .interest-row {
+      background: #000;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .interest-left {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+    }
+
+    .interest-left label {
+      font-weight: 500;
+      color: #cfcfcf;
+      margin: 0;
+    }
+
+    .interest-desc {
+      font-weight: 500;
+      color: #666;
+      font-size: .9rem;
+      flex: 1;
+      margin-left: 1.5rem;
+    }
+
+    .btn-submit {
+      background-color: #32CD32;
+      color: #fff;
+      border: none;
+      padding: .5rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0px 8px 18px rgba(74, 100, 198, 0.4);
+    }
+
+    .actions {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+/* Dropdown toggle icon animation */
+.toggle-icon {
+    transition: transform 0.3s ease-in-out;
+}
+a[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.slide-toggle {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease; /* smooth slide */
+}
+
+.slide-toggle.show {
+    max-height: 800px; /* set bigger than your form height */
+}
+</style>
+{% endblock %}

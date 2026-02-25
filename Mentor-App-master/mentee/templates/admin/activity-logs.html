@@ -1,0 +1,323 @@
+{% extends "admin/base_site.html" %}
+{% block title %} MentorConnect Logs {% endblock %}
+{% block content %}
+<style>
+/* Remove underline from breadcrumb links */
+.breadcrumbs a {
+    text-decoration: none !important;
+}
+
+/* Optional: add underline on hover */
+.breadcrumbs a:hover {
+    text-decoration: underline !important;
+}
+
+.top-bar input,
+.top-bar select,
+.top-bar button,
+.top-bar label {
+    height: 30px;            /* reduce height */
+    padding: 2px 6px;        /* smaller padding */
+    font-size: 13px;         /* optional: smaller text */
+  }
+
+.top-bar-right input,
+.top-bar-right select,
+.top-bar-right button,
+.top-bar-right label {
+    height: 30px;            /* reduce height */
+    padding: 2px 6px;        /* smaller padding */
+    font-size: 13px;         /* optional: smaller text */
+  }
+</style>
+
+<h1>Website Activity Logs</h1>
+
+<div class="top-bar" style="display:flex;gap:8px;margin-bottom:12px;">
+  <input id="q_user" placeholder="User">
+  <input id="q_action" placeholder="Action">
+  <input id="q_module" placeholder="Module">
+  <input id="q_date" type="date">
+  <input id="q_search" placeholder="Search details">
+  <button id="btn_filter">Filter</button>
+  <!-- Export buttons -->
+  <button id="btn_csv">CSV</button>
+  <button id="btn_xlsx">Excel</button>
+  <button id="btn_pdf">PDF</button>
+  <!-- show-only-changes toggle -->
+  <label style="display:inline-flex;align-items:center;gap:6px;">
+    <input type="checkbox" id="chk_changes"> Show only changed rows
+  </label>
+
+  <!-- auto-refresh controls -->
+  <label style="display:inline-flex;align-items:center;gap:6px;">
+    Auto-refresh:
+    <input id="auto_interval" type="number" min="5" value="15" style="width:60px;">
+    <span>sec</span>
+    <button id="btn_autotoggle">Start</button>
+  </label>
+
+  <!-- pagination controls -->
+  <div class="top-bar-right" style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+    <button id="btn_prev">Prev</button>
+    <input id="current_page" type="number" min="1" value="1" style="width:60px;">
+    <span>/ <span id="total_pages">1</span></span>
+    <button id="btn_next">Next</button>
+
+    <label style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;">
+      Per page:
+      <select id="per_page">
+        <option>25</option>
+        <option selected>50</option>
+        <option>100</option>
+        <option>250</option>
+      </select>
+    </label>
+  </div>
+</div>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+        <th style="width:120px">User</th>
+        <th style="width:90px">Action</th>
+        <th style="width:90px">Module</th>
+        <th>Details</th>
+        <th style="width:240px">Changes</th>
+        <th style="width:180px">Old Data</th>
+        <th style="width:180px">New Data</th>
+        <th style="width:110px">IP</th>
+        <th style="width:200px">Browser</th>
+        <th style="width:180px">Path</th>
+        <th style="width:140px">Timestamp (IST)</th>
+    </tr>
+  </thead>
+  <tbody id="log_body">
+    <tr><td colspan="11">Loading...</td></tr>
+  </tbody>
+</table>
+
+<script>
+/* ---------- IST formatter ---------- */
+function formatIST(utcString) {
+  if (!utcString) return "";
+
+  // Try to parse; browsers accept ISO strings with Z
+  const date = new Date(utcString);
+  if (isNaN(date.getTime())) return utcString;
+
+  // IST offset in ms (5.5 hours)
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(date.getTime() + istOffset);
+
+  return istDate.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+  });
+}
+
+/* ---------- state ---------- */
+let CURRENT_PAGE = 1;
+let TOTAL_PAGES = 1;
+let AUTO_TIMER = null;
+
+/* ---------- build params from UI ---------- */
+function buildParams(page = 1) {
+  const params = new URLSearchParams();
+  const user = document.getElementById("q_user").value;
+  const action = document.getElementById("q_action").value;
+  const module = document.getElementById("q_module").value;
+  const date = document.getElementById("q_date").value;
+  const q = document.getElementById("q_search").value;
+  const per = document.getElementById("per_page").value;
+
+  if (user) params.set("user", user);
+  if (action) params.set("action", action);
+  if (module) params.set("module", module);
+  if (date) params.set("date", date);
+  if (q) params.set("q", q);
+  if (document.getElementById("chk_changes").checked)
+    params.set("only_changed", 1);
+  params.set("page", page);
+  params.set("per", per || 50);
+
+  return params;
+}
+
+/* ---------- render one row ---------- */
+function renderRow(r, showOnlyChanges) {
+  // If showOnlyChanges and there are no changes -> skip
+  const hasChanges = r.changes && Object.keys(r.changes).length > 0;
+  if (showOnlyChanges && !hasChanges) return null;
+
+  // Build diff HTML
+  const diffHtml = hasChanges
+    ? Object.entries(r.changes).map(([field, vals]) => {
+        const oldVal = vals && ("old" in vals) ? (vals.old === null ? "" : escapeHtml(String(vals.old))) : "";
+        const newVal = vals && ("new" in vals) ? (vals.new === null ? "" : escapeHtml(String(vals.new))) : "";
+        return `<div style="margin-bottom:4px"><strong>${escapeHtml(field)}</strong>: <span style="color:#c0392b">${oldVal}</span> → <span style="color:#27ae60">${newVal}</span></div>`;
+      }).join("")
+    : "";
+
+  const oldDataPretty = r.old_data ? escapeAndPrettyJson(r.old_data) : "";
+  const newDataPretty = r.new_data ? escapeAndPrettyJson(r.new_data) : "";
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r.user || "")}</td>
+    <td>${escapeHtml(r.action || "")}</td>
+    <td>${escapeHtml(r.module || "")}</td>
+    <td style="max-width:320px;overflow:auto"><div>${escapeHtml(r.details||"")}</div></td>
+    <td style="max-width:280px;overflow:auto">${diffHtml}</td>
+    <td style="max-width:200px;overflow:auto"><pre style="white-space:pre-wrap;margin:0">${oldDataPretty}</pre></td>
+    <td style="max-width:200px;overflow:auto"><pre style="white-space:pre-wrap;margin:0">${newDataPretty}</pre></td>
+    <td>${escapeHtml(r.ip || "")}</td>
+    <td style="max-width:200px;overflow:auto">${escapeHtml(r.browser || "")}</td>
+    <td style="max-width:160px;overflow:auto">${escapeHtml(r.path || "")}</td>
+    <td>${formatIST(r.timestamp)}</td>
+  `;
+  return tr;
+}
+
+/* ---------- tiny helpers ---------- */
+function escapeHtml(s){
+  if (!s) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAndPrettyJson(obj){
+  try {
+    return escapeHtml(JSON.stringify(obj, null, 2));
+  } catch (e) {
+    return escapeHtml(String(obj));
+  }
+}
+
+/* ---------- fetch logs ---------- */
+async function fetchLogs(page = 1, {preservePage=false} = {}) {
+  const params = buildParams(page);
+  const url = "{% url 'activity_logs_api' %}?" + params.toString();
+
+  try {
+    const res = await fetch(url, {credentials: 'same-origin'});
+    if (!res.ok) throw new Error("Network error");
+    const data = await res.json();
+
+    // Expecting { results: [...], page: 1, total_pages: X, total_count: N }
+    const results = data.results || [];
+    CURRENT_PAGE = data.page || page || 1;
+    TOTAL_PAGES = data.total_pages || (data.total ? Math.ceil((data.total)/ (params.get("per")||50)) : 1);
+
+    // Update UI pagination
+    document.getElementById("current_page").value = CURRENT_PAGE;
+    document.getElementById("total_pages").textContent = TOTAL_PAGES;
+
+    const tbody = document.getElementById("log_body");
+    tbody.innerHTML = "";
+
+    const showOnlyChanges = document.getElementById("chk_changes").checked;
+
+    let countRows = 0;
+    for (const r of results) {
+      const row = renderRow(r, showOnlyChanges);
+      if (!row) continue;
+      tbody.appendChild(row);
+      countRows++;
+    }
+
+    if (countRows === 0) {
+      tbody.innerHTML = "<tr><td colspan='11'>No logs found.</td></tr>";
+    }
+
+  } catch (err) {
+    console.error(err);
+    const tbody = document.getElementById("log_body");
+    tbody.innerHTML = "<tr><td colspan='11'>Error loading logs.</td></tr>";
+  }
+}
+
+/* ---------- pagination handlers ---------- */
+document.getElementById("btn_prev").addEventListener("click", ()=>{
+  if (CURRENT_PAGE > 1) {
+    CURRENT_PAGE = CURRENT_PAGE - 1;
+    fetchLogs(CURRENT_PAGE);
+  }
+});
+document.getElementById("btn_next").addEventListener("click", ()=>{
+  if (CURRENT_PAGE < TOTAL_PAGES) {
+    CURRENT_PAGE = CURRENT_PAGE + 1;
+    fetchLogs(CURRENT_PAGE);
+  }
+});
+document.getElementById("current_page").addEventListener("change", (e)=>{
+  let p = parseInt(e.target.value) || 1;
+  p = Math.max(1, Math.min(p, TOTAL_PAGES));
+  CURRENT_PAGE = p;
+  fetchLogs(CURRENT_PAGE);
+});
+document.getElementById("per_page").addEventListener("change", ()=>{
+  // reset to page 1 when per_page changes
+  CURRENT_PAGE = 1;
+  fetchLogs(1);
+});
+
+/* ---------- filter / export buttons ---------- */
+document.getElementById("btn_filter").addEventListener("click", ()=> {
+  CURRENT_PAGE = 1;
+  fetchLogs(1);
+});
+document.getElementById("btn_csv").addEventListener("click", ()=> {
+  const params = buildParams(CURRENT_PAGE);
+  window.location = "{% url 'activity_logs_export_csv' %}?" + params.toString();
+});
+document.getElementById("btn_xlsx").addEventListener("click", ()=> {
+  const params = buildParams(CURRENT_PAGE);
+  window.location = "{% url 'activity_logs_export_excel' %}?" + params.toString();
+});
+document.getElementById("btn_pdf").addEventListener("click", ()=> {
+  const params = buildParams(CURRENT_PAGE);
+  window.location = "{% url 'logs_export_pdf' %}?" + params.toString();
+});
+
+/* ---------- show-only-changes toggle (re-fetch) ---------- */
+document.getElementById("chk_changes").addEventListener("change", ()=> fetchLogs(CURRENT_PAGE));
+
+/* ---------- auto-refresh toggle ---------- */
+document.getElementById("btn_autotoggle").addEventListener("click", ()=>{
+  const btn = document.getElementById("btn_autotoggle");
+  const intervalSec = parseInt(document.getElementById("auto_interval").value) || 15;
+
+  if (AUTO_TIMER) {
+    // stop
+    clearInterval(AUTO_TIMER);
+    AUTO_TIMER = null;
+    btn.textContent = "Start";
+  } else {
+    // start
+    AUTO_TIMER = setInterval(()=> {
+      // preserve current page and filters when refreshing
+      fetchLogs(CURRENT_PAGE, {preservePage:true});
+    }, Math.max(5000, intervalSec*1000));
+    btn.textContent = "Stop";
+  }
+});
+
+/* ---------- ensure auto-refresh clears when navigating away ---------- */
+window.addEventListener("beforeunload", ()=>{
+  if (AUTO_TIMER) clearInterval(AUTO_TIMER);
+});
+
+/* ---------- init ---------- */
+fetchLogs(1);
+</script>
+
+{% endblock %}

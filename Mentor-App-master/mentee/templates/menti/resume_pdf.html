@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+{% load custom_filters %}
+<html>
+<head>
+<meta charset="utf-8">
+<title>Resume</title>
+
+<style>
+  body {
+    font-family: DejaVu Sans, sans-serif;
+    font-size: 11pt;
+  }
+  h1 {
+    margin: 0;
+    font-size: 20pt;
+  }
+  h2 {
+    font-size: 13pt;
+    border-bottom: 1px solid #000;
+    margin-top: 12px;
+  }
+  p {
+    margin: 3px 0;
+  }
+</style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+<table width="100%" cellpadding="5">
+<tr>
+  <td width="20%">
+    {% if profile.image %}
+      <img src="{{ profile.image.url }}" width="90" height="90" />
+    {% endif %}
+  </td>
+
+  <td width="80%">
+    <h1>{{ profile.student_name }}</h1>
+    <p>{{ profile.branch }} | {{ profile.year }} | Semester {{ profile.semester }}</p>
+    <p>Email: {{ user.email }} | Contact: {{ profile.contact_number }}</p>
+  </td>
+</tr>
+</table>
+
+<hr>
+
+<!-- ================= TWO COLUMN BODY ================= -->
+<table width="100%" cellpadding="8" cellspacing="0">
+<tr>
+
+<!-- ===== LEFT COLUMN ===== -->
+<td width="30%" valign="top">
+
+  <h2>Key Skills</h2>
+  {% for skill in overview.key_skills|split:"," %}
+    <ul>
+        <li>{{ skill }}</li>
+    </ul>
+  {% endfor %}
+
+  <h2>Achievements</h2>
+  <p class="mb-1">Sports/Cultural:</p>
+    {% for s in sports %}
+    <ul>
+        <li><strong>{{ s.name_of_event }}</strong> - {{ s.prize_won }} ({{s.level}})</li>
+    </ul>
+    {% endfor %}
+    <p class="mb-1">Other:</p>
+    {% for o in other_events %}
+    <ul class="mb-1">
+        <li><strong>{{ o.name_of_event }}</strong> - {{ o.prize_won }} ({{o.level}})</li>
+    </ul>
+    {% endfor %}
+    {% if not sports and not other_events %}
+    <p class="mb-0 text-muted">No achievements added yet.</p>
+    {% endif %}
+</td>
+
+<!-- ===== RIGHT COLUMN ===== -->
+<td width="70%" valign="top">
+
+  <h2>Professional Summary</h2>
+  <p>{{ overview.profile_summary }}</p>
+
+  <h2>Education</h2>
+  {% for edu in education %}
+    <p>
+      <strong>{{ edu.examination }}</strong> – {{ edu.percentage }}%
+      ({{ edu.university_board }}, {{ edu.year_of_passing }})
+    </p>
+  {% endfor %}
+
+  <h2>Internships / Experience</h2>
+  {% for i in internships %}
+    <p>
+      <strong>{{ i.title }}</strong> – {{ i.company_name }}<br>
+      {{ i.start_date }} to {{ i.end_date }} ({{ i.no_of_days }} days)
+    </p>
+  {% endfor %}
+
+  <h2>Projects</h2>
+  {% for p in projects %}
+    <p>
+      <strong>{{ p.title }}</strong> ({{ p.project_type }})<br>
+      {{ p.details }}
+    </p>
+  {% endfor %}
+
+  <h2>Certifications</h2>
+  {% for c in certifications %}
+    <p class="mb-1">
+        <strong>{{ c.title }}</strong> - {{ c.certifying_authority }}<br>
+        {{c.start_date}} to {{c.end_date}} ({{ c.no_of_days }} days)
+    </p>
+    {% empty %}
+    <p class="mb-0 text-muted">No certifications added yet.</p>
+    {% endfor %}
+
+  <h2>Publications</h2>
+  {% for pub in publications %}
+    <p>
+        <strong>{{ pub.title }}</strong> ({{ pub.type }} - {{ pub.level }} Level)<br>
+        Authors: {{ pub.authors }}
+    </p>
+  {% endfor %}
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

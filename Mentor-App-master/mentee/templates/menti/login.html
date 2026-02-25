@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+{% load static %}
+{% load crispy_forms_tags %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student's Online Diary - Login</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+    /* ------------------------------
+       GLOBAL BACKGROUND
+    ------------------------------- */
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: #e5e7eb;
+    }
+
+    /* ------------------------------
+       NAVBAR (GLASS + GLOW)
+    ------------------------------- */
+    .navbar-custom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #020617, #1e293b);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      box-shadow:
+        0 0 30px rgba(59, 130, 246, 0.5),
+        inset 0 0 12px rgba(255,255,255,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1050;
+    }
+
+    .navbar-custom::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+
+    /* ------------------------------
+       NAVBAR SECTIONS
+    ------------------------------- */
+    .navbar-left {
+      position: relative;
+      z-index: 2;
+    }
+
+    .navbar-left img {
+      position: relative;
+      width:75px;
+      height:65px;
+      transition: transform 0.3s ease;
+      padding: 4px;
+      border-radius: 8px;
+      z-index: 3;
+    }
+    .navbar-left img:hover {
+      transform: scale(1.08) rotate(-2deg);
+    }
+
+    .navbar-center {
+      flex-grow: 1;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      line-height: 1.3;
+      z-index: 1;
+    }
+
+    .navbar-right a {
+      color: #e0e7ff;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 999px;
+      transition: all 0.25s ease;
+      z-index: 1;
+    }
+
+    .navbar-right a:hover {
+      background: rgba(59,130,246,0.2);
+      color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59,130,246,0.5);
+    }
+
+    /* ------------------------------
+       PAGE HEADER
+    ------------------------------- */
+    h2 {
+      color: #93c5fd !important;
+      text-shadow: 0 0 12px rgba(147,197,253,0.6);
+    }
+
+    /* ------------------------------
+       INSTRUCTION BOX (NEON CARD)
+    ------------------------------- */
+    .col-md-5 > div {
+      background: linear-gradient(135deg, #020617, #1e293b) !important;
+      border-radius: 16px;
+      box-shadow:
+        0 0 30px rgba(59,130,246,0.4),
+        inset 0 0 10px rgba(255,255,255,0.05);
+      border: 1px solid rgba(59,130,246,0.4);
+    }
+
+    .col-md-5 h4 {
+      color: #93c5fd;
+      text-shadow: 0 0 10px rgba(147,197,253,0.6);
+    }
+
+    .col-md-5 ol {
+      color: #e5e7eb;
+    }
+
+    .col-md-5 code {
+      color: #60a5fa;
+      background: rgba(59,130,246,0.15);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    /* ------------------------------
+       LOGIN CARD (FLOATING GLASS)
+    ------------------------------- */
+    .card {
+      border-radius: 18px;
+      border: 1px solid rgba(59,130,246,0.4);
+      background: linear-gradient(135deg, #020617, #020617);
+      box-shadow:
+        0 0 35px rgba(59,130,246,0.5),
+        inset 0 0 10px rgba(255,255,255,0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 0 50px rgba(59,130,246,0.7),
+        inset 0 0 14px rgba(255,255,255,0.08);
+    }
+
+    .card-body {
+      padding: 2.5rem;
+    }
+
+    /* ------------------------------
+       FORM INPUTS
+    ------------------------------- */
+    .form-control {
+      background: #020617;
+      border: 1px solid rgba(59,130,246,0.4);
+      color: #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 14px;
+      transition: all 0.25s ease;
+    }
+
+    .form-control::placeholder {
+      color: #94a3b8;
+    }
+
+    .form-control:focus {
+      background: #020617;
+      border-color: #60a5fa;
+      box-shadow: 0 0 15px rgba(96,165,250,0.6);
+      color: #ffffff;
+    }
+
+    /* ------------------------------
+       PASSWORD TOGGLE ICON
+    ------------------------------- */
+    #togglePassword {
+      color: #93c5fd;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    #togglePassword:hover {
+      color: #ffffff;
+      transform: scale(1.2);
+    }
+
+    /* ------------------------------
+       FORGOT PASSWORD LINK
+    ------------------------------- */
+    a.text-danger {
+      color: #f87171 !important;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    a.text-danger:hover {
+      color: #fecaca !important;
+      text-shadow: 0 0 8px rgba(248,113,113,0.8);
+    }
+
+    /* ------------------------------
+       BUTTON (NEON GLOW)
+    ------------------------------- */
+    button.btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+      color: white;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 12px;
+      border: none;
+      box-shadow:
+        0 0 20px rgba(59,130,246,0.6),
+        inset 0 0 10px rgba(255,255,255,0.1);
+      transition: all 0.25s ease;
+    }
+
+    button.btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow:
+        0 0 35px rgba(59,130,246,0.9),
+        inset 0 0 14px rgba(255,255,255,0.2);
+    }
+
+    /* ------------------------------
+       BUTTON LOADING STATE
+    ------------------------------- */
+    .btn-loading {
+      pointer-events: none;
+      opacity: 0.8;
+      position: relative;
+    }
+
+    .btn-loading::after {
+      content: "";
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    /* ------------------------------
+       SPINNER ANIMATION
+    ------------------------------- */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg) translateY(-50%);
+      }
+    }
+
+    /* ------------------------------
+       ERROR SHAKE
+    ------------------------------- */
+    .shake {
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+      100% { transform: translateX(0); }
+    }
+
+    /* ------------------------------
+       SUCCESS GLOW
+    ------------------------------- */
+    .success-glow {
+      box-shadow: 0 0 25px rgba(0, 255, 140, 0.9) !important;
+      border: 1px solid rgba(0, 255, 140, 0.8);
+      transition: all 0.4s ease;
+    }
+    /* ------------------------------
+       ERROR GLOW
+    ------------------------------- */
+    .shake {
+      box-shadow: 0 0 25px rgba(255, 0, 0, 0.9) !important;
+      border: 1px solid rgba(255, 0, 0, 0.8);
+      transition: all 0.4s ease;
+    }
+    </style>
+
+</head>
+<body>
+
+    <!-- College Name Header -->
+    <div class="navbar-custom">
+      <!-- Left: Logo -->
+      <div class="navbar-left">
+        <img src="/media/logo.png" alt="Logo">
+      </div>
+
+      <!-- Center: Text -->
+      <div class="navbar-center text-center">
+        Parshvanath Charitable Trust's <br>
+        <strong>A P Shah Institute of Technology, Thane</strong>
+      </div>
+
+      <!-- Right: Links -->
+      <div class="navbar-right d-flex">
+        <a class="nav-item nav-link text-white" href="{% url 'register' %}">Register</a>
+        <a class="nav-item nav-link text-white" href="{% url 'home' %}">Home</a>
+      </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="container mt-5">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h2 class="fw-bold" style="color:#3f5cbf;">
+                Welcome to Student's Online Diary
+            </h2>
+        </div>
+
+        <div class="row justify-content-center">
+            <!-- Instructions Box -->
+            <div class="col-md-5">
+                <div class="p-4 rounded" style="background-color:#3f5cbf; color:white;">
+                    <h4><strong>Instructions:</strong></h4>
+                    <ol>
+                        <li>Log in using username and password.</li>
+                        <li>If not already a user, Sign Up/Register to create an account.</li>
+                        <li>Sign Up using <b><span style="color:rgb(255,0,0);">*Moodle ID*</span></b> only.</li>
+                        <li>Upload images in <code>.jpg</code> format only.</li>
+                        <li>Upload documents in <code>.pdf</code> format only.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Login Card -->
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <h4 class="fw-bold mb-3" style="color:#3f5cbf;">Login to Diary</h4>
+                        {% if messages %}
+                            {% for message in messages %}
+                              <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                              </div>
+                            {% endfor %}
+                        {% endif %}
+                        <p class="text-muted" style="color: #fff !important;">Please, login to continue.</p>
+
+                        <form method="post" action="{% url 'login' %}">
+                            {% csrf_token %}
+                            <!-- Username -->
+                            <div class="mb-3">
+                                <input type="text" name="username" class="form-control" placeholder="Student ID (8 digits)" required>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="mb-3 position-relative">
+                                <input id="password" type="password" name="password" class="form-control" placeholder="Password" required>
+                                <i class="fa fa-eye position-absolute" id="togglePassword" style="right: 15px; top: 30%; transform: translateY(-50%); cursor: pointer;"></i>
+                                <small><a style="margin-right:200px;" class="text-danger" href="{% url 'forget_password'%}">Forgot Password?</a></small>
+                            </div>
+                            <!-- Submit -->
+                            <button id="loginBtn" type="submit" class="btn w-100" style="background-color:#3f5cbf; color:white;">
+                                Sign in
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById("togglePassword").addEventListener("click", function () {
+        const password = document.getElementById("password");
+
+        if (password.type === "password") {
+            password.type = "text";
+            this.classList.remove("fa-eye");
+            this.classList.add("fa-eye-slash");
+        } else {
+            password.type = "password";
+            this.classList.remove("fa-eye-slash");
+            this.classList.add("fa-eye");
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const form = document.querySelector("form");
+      const btn = document.getElementById("loginBtn");
+      const card = document.querySelector(".card");
+
+      // 🔥 Show spinner on submit
+      form.addEventListener("submit", function () {
+        btn.classList.add("btn-loading");
+        btn.innerText = "Signing in...";
+      });
+
+      // 🔴 Shake on error (Django messages)
+      const alerts = document.querySelectorAll(".alert-warning, .alert-error");
+      if (alerts.length > 0) {
+        card.classList.add("shake");
+        setTimeout(() => card.classList.remove("shake"), 1000);
+      }
+
+      // 🟢 Success glow
+      const successAlerts = document.querySelectorAll(".alert-success");
+      if (successAlerts.length > 0) {
+        card.classList.add("success-glow");
+      }
+    });
+    </script>
+</body>
+</html>

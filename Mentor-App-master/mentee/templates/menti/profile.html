@@ -1,0 +1,250 @@
+{% extends 'menti/base.html' %}
+{% load widget_tweaks %}
+{% load static %}
+{% block title %} Profile {% endblock %}
+{% block content %}
+<div class="d-flex">
+  <!-- Sidebar -->
+    {% include "menti/mentee_sidebar.html" %}
+  <!-- Main Content -->
+  <div class="content shifted flex-grow-1 p-4">
+    <div class="container mt-3">
+      <div class="card shadow-sm border-0 p-0">
+        {% if is_mentor_view == False %}
+        <!-- Card Header -->
+        <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
+            <button id="toggleSidebarBtn"
+                  class="btn header-btn border-0 me-3 d-flex align-items-center justify-content-center"
+                  style="width:40px; height:40px;">
+            <i id="sidebarIcon" class="bi bi-list fs-4"></i>
+          </button>
+          <h4 class="mb-0 fw-semibold">Update Profile</h4>
+        </div><br>
+        {% endif %}
+        <!-- Body (Form) -->
+        <div class="card-body">
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                {{ form.errors }}
+            </div>
+            {% endif %}
+          <form method="POST" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="row g-3">
+
+                <!-- Personal Info -->
+                <div class="col-12">
+                  <h5 class="fw-bold mt-3">Personal Information</h5>
+                  <hr style="border:none; border: 1px dashed #000; opacity:1;">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Moodle ID</label>
+                  {{ form.moodle_id|add_class:"form-control" }}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Profile Image</label>
+                  {{ form.image|add_class:"form-control" }}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Student Name</label>
+                  {{ form.student_name|add_class:"form-control" }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Semester</label>
+                  {{ form.semester|add_class:"form-select" }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Year</label>
+                  {{ form.year|add_class:"form-select" }}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Branch</label>
+                  {{ form.branch|add_class:"form-select" }}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Date of Birth</label>
+                  {{ form.dob|add_class:"form-control" }}
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Address</label>
+                  {{ form.address|add_class:"form-control" }}
+                </div>
+
+                <!-- Contact Info -->
+                <div class="col-12">
+                  <h5 class="fw-bold mt-4">Contact Information</h5>
+                  <hr style="border:none; border: 1px dashed #000; opacity:1;">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Contact Number</label>
+                  {{ form.contact_number|add_class:"form-control" }}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Email</label>
+                  {{ form.email|add_class:"form-control" }}
+                </div>
+
+                <!-- Hobbies / About -->
+                <div class="col-md-6">
+                  <label class="form-label">Hobby</label>
+                  {{ form.hobby|add_class:"form-control" }}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">About Me</label>
+                  {{ form.about_me|add_class:"form-control" }}
+                </div>
+
+                <!-- Family Info -->
+                <div class="col-12">
+                  <h5 class="fw-bold mt-4">Family Information</h5>
+                  <hr style="border:none; border: 1px dashed #000; opacity:1;">
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Mother's Name</label>
+                  {{ form.mother_name|add_class:"form-control" }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Occupation</label>
+                  {{ form.mother_occupation|add_class:"form-control" }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Contact</label>
+                  {{ form.mother_contact|add_class:"form-control" }}
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Father's Name</label>
+                  {{ form.father_name|add_class:"form-control" }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Occupation</label>
+                  {{ form.father_occupation|add_class:"form-control" }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Contact</label>
+                  {{ form.father_contact|add_class:"form-control" }}
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Sibling 1</label>
+                  {{ form.sibling1_name|add_class:"form-control" }}
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Sibling 2</label>
+                  {{ form.sibling2_name|add_class:"form-control" }}
+                </div>
+
+                <!-- Career Info -->
+                <div class="col-12">
+                  <h5 class="fw-bold mt-4">Career Information</h5>
+                  <hr style="border:none; border: 1px dashed #000; opacity:1;">
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Career Domain</label>
+                  {{ form.career_domain|add_class:"form-control" }}
+                </div>
+
+              </div>
+              {% if is_mentor_view == False %}
+              <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
+                <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">Save Changes</button>
+                <a href="{% url 'internship-pbl-list' %}" class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm w-100 w-md-50">
+                  Next <i class="bi bi-arrow-right-circle"></i>
+                </a>
+              </div>
+              {% endif %}
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.card {
+  background: #121212;
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark floating header inside the card */
+.header-dark {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  background: rgba(0,0,0,0.9) !important; /* beat Bootstrap */
+  color: #fff !important;
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  padding: 1rem;
+}
+
+/* Make sure header text/icons are white */
+.header-dark h4,
+.header-dark i { color: #fff !important; }
+
+/* Push body content down so it's not hidden under header */
+.card-body {
+  padding-top: 60px; /* adjust equal to header height */
+  position: relative;
+  z-index: 1;
+  background: #fff;
+}
+
+/* Header toggle button (replace btn-light) */
+.header-btn {
+  background: rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  transition: background .2s, transform .2s;
+}
+.header-btn:hover {
+    background: rgba(255,255,255,0.22) !important;
+    transform: scale(1.05);
+    }
+.header-btn i { color: #fff !important; }
+
+/* Section Headers */
+h5.fw-bold {
+  color: #000;
+  font-size: 1.1rem;
+}
+
+/* Labels */
+.form-label {
+  font-weight: 600;
+  color: #000;
+}
+
+/* Inputs */
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  transition: all 0.2s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #f0f2f5;
+  box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.25);
+}
+
+/* Buttons */
+.btn {
+  border-radius: 12px;
+  font-weight: 500;
+  transition: transform 0.2s;
+}
+.btn:hover {
+  transform: translateY(-2px);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>APSIT Diary</title>
+  </head>
+<body>
+<!-- Sidebar -->
+    <div id="sidebar" class="sidebar bg-steel text-white p-3">
+        <!-- User Info -->
+        {% if user.is_authenticated and user.profile %}
+        <div class="text-center mb-3">
+            {% if user.mentor.image %}
+            <img src="{{ user.mentor.image.url }}"
+                 class="rounded-circle shadow-sm border border-3 border-light"
+                 style="width:80px; height:80px; object-fit: cover;">
+            {% else %}
+            <img src="/media/default.png"
+                 class="rounded-circle shadow-sm border border-3 border-light"
+                 style="width:80px; height:80px; object-fit: cover;">
+            {% endif %}
+        </div>
+        <h5 class="fw-semibold">Name: {{ user.mentor.name|default:user.get_full_name }}</h5>
+        <small><b>Department - {{ user.mentor.department }}</b></small><hr>
+        {% else %}
+            <img src="/media/default.png"
+                 alt="Profile Pic"
+                 class="rounded-circle border shadow-sm mb-2"
+                 style="width:80px; height:80px; object-fit:cover;">
+
+            <h5 class="fw-semibold">Guest User</h5>
+            <small><b>Please log in</b></small>
+        {% endif %}
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item"><a href="{% url 'account1' %}" class="nav-link text-white">Home</a></li>
+            <li class="nav-item"><a href="{% url 'profile1' %}" class="nav-link text-white">Profile</a></li>
+            <li class="nav-item"><a href="{% url 'module-message1' %}" class="nav-link text-white">Message</a></li>
+
+            <!-- Mentor dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#activitiesMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="activitiesMenu">
+                <span>Mentor</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="activitiesMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="{% url 'mentor_interaction' %}" class="nav-link text-white">Mentor-Mentee Interaction</a></li>
+                  <li><a href="{% url 'mentee_documents' %}" class="nav-link text-white">Mentee Uploaded Documents</a></li>
+                  <li><a href="{% url 'weekly-agenda' %}" class="nav-link text-white">Weekly Agenda</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <!-- Student Data dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#certMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="certMenu">
+                <span>Student Data</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="certMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="{% url 'download_student_data' %}" class="nav-link text-white">Download Excel Data</a></li>
+                  <li><a href="{% url 'student_visualization' %}" class="nav-link text-white">Visualize Data</a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-item"><a href="{% url 'logout1' %}" class="nav-link text-white">Logout</a></li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -1,0 +1,236 @@
+{% extends "menti/base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %} Projects {% endblock %}
+{% block content %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    {% if is_mentor_view == False %}
+    {% include "menti/mentee_sidebar.html" %}
+    {% endif %}
+    <!-- Main Content -->
+    <div class="content shifted flex-grow-1 p-4">
+        <div class="container">
+            <div class="d-flex align-items-center mb-3">
+                <h2 class="text-white p-3 bg-black rounded">
+                    {% if is_mentor_view == False %}
+                    <a id="toggleSidebarBtn" class="btn btn-outline-dark me-2">
+                        <i id="sidebarIcon" class="bi bi-list"></i>
+                    </a>
+                    {% endif %}
+                    Projects
+                </h2>
+            </div>
+            <div class="card shadow-sm bg-dark border-0 p-0">
+                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <h5 class="mb-0 fw-semibold" style="color: #fff;">Uploaded Projects</h5>
+                    </div>
+                        <span class="badge bg-primary-subtle text-primary">
+                            {{ projects|length }} Project{{ projects|length|pluralize }}
+                        </span>
+                    </div>
+                <!-- Project Table -->
+                <table class="table table-bordered table-hover align-middle shadow-sm rounded">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-center">Sr. No</th>
+                            <th class="text-center">Title</th>
+                            <th class="text-center">Academic Year</th>
+                            <th class="text-center">Class</th>
+                            <th class="text-center">Semester</th>
+                            <th class="text-center">Type</th>
+                            <th class="text-center">Details</th>
+                            <th class="text-center">Guide</th>
+                            <th class="text-center">Link</th>
+                            {% if is_mentor_view == False %}
+                            <th class="text-center">Action</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in projects %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td class="text-center">{{ project.title }}</td>
+                                <td class="text-center">{{ project.academic_year }}</td>
+                                <td class="text-center">{{ project.year }}</td>
+                                <td class="text-center">{{ project.semester }}</td>
+                                <td class="text-center">{{ project.project_type }}</td>
+                                <td class="text-center">{{ project.details }}</td>
+                                <td class="text-center">{{ project.guide_name }}</td>
+                                <td class="text-center">
+                                    <a class="btn btn-primary btn-sm" href="{{ project.link }}" target="_blank">View</a>
+                                </td>
+                                {% if is_mentor_view == False %}
+                                <td class="text-center">
+                                    <!-- Edit Button -->
+                                    <a href="?edit={{ project.id }}" class="btn btn-dark btn-sm">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+
+                                    <!-- Delete Form -->
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" name="delete" value="{{ project.id }}"
+                                                class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Are you sure you want to delete this project?');">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center">No projects submitted yet.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if is_mentor_view == False %}
+            <!-- Project Form -->
+            <div class="row justify-content-center">
+                <div class="col-md-10"><br>
+                    <button type="button" class="btn btn-danger" id="showFormBtn">
+                        Add <i id="toggleIcon" class="bi bi-plus-lg"></i>
+                    </button>
+                    <hr>
+
+                    <div class="card internship-card shadow-lg rounded-3">
+                        <div class="card-header header-dark border-bottom d-flex align-items-center p-3">
+                            <h4 class="mb-0 fw-bold" style="color: #000 !important;">{% if editing %}Update Project{% else %}Add Project{% endif %}</h4>
+                        </div><br><br>
+                        <div class="card-body">
+                            <div id="projectFormWrapper" class="{% if editing %}open{% endif %}">
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.errors }}
+                                </div>
+                                {% endif %}
+                                <form method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <small class="text-muted" style="color:#ff0000 !important;">
+                                        Note: '*' asterisk denotes that the fields are required.
+                                    </small>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Title <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.title|add_class:"form-control" }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Academic Year <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.academic_year|add_class:"form-select" }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Semester <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.semester|add_class:"form-select" }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Project Type <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.project_type|add_class:"form-select" }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Class <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.year|add_class:"form-select" }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Guide Name <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.guide_name|add_class:"form-control" }}
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Details <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.details|add_class:"form-control" }}
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Project Link <span style="color:#ff0000 !important;">*</span></label>
+                                            {{ form.link|add_class:"form-control" }}
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mt-4">
+                                        <button type="submit" class="btn btn-success btn-lg w-100 w-md-50">
+                                            {% if editing %}Update{% else %}Submit{% endif %}
+                                        </button>
+                                        {% if editing %}
+                                            <a href="{% url 'projects-list' %}" class="btn btn-secondary btn-lg">Cancel</a>
+                                        {% endif %}
+                                    </div><br>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prev / Next Buttons -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+                <a href="{% url 'internship-pbl-list' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    <i class="bi bi-arrow-left-circle"></i> Prev
+                </a>
+                <a href="{% url 'sports-and-cultural' %}"
+                   class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+                    Next <i class="bi bi-arrow-right-circle"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Project form toggle
+    const showFormBtn = document.getElementById("showFormBtn");
+    const toggleIcon = document.getElementById("toggleIcon");
+    const formWrapper = document.getElementById("projectFormWrapper");
+
+    showFormBtn.addEventListener("click", function () {
+        formWrapper.classList.toggle("open");
+
+        // toggle icon
+        toggleIcon.classList.toggle("bi-plus-lg");
+        toggleIcon.classList.toggle("bi-dash-lg");
+
+        // toggle button text (Add <-> Remove)
+        if (showFormBtn.textContent.includes("Add")) {
+            showFormBtn.innerHTML = `Remove <i id="toggleIcon" class="bi bi-dash-lg"></i>`;
+        } else {
+            showFormBtn.innerHTML = `Add <i id="toggleIcon" class="bi bi-plus-lg"></i>`;
+        }
+    });
+});
+</script>
+
+<style>
+    /* Dropdown toggle icon animation */
+.toggle-icon {
+    transition: transform 0.3s ease-in-out;
+}
+a[aria-expanded="true"] .toggle-icon {
+    transform: rotate(180deg);
+}
+
+#projectForm {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-in-out;
+}
+#projectForm.show {
+    max-height: 1000px; /* large enough to fit form */
+}
+
+/* wrapper for smooth slide */
+#projectFormWrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+#projectFormWrapper.open {
+  max-height: 1000px; /* large enough to fit your form */
+}
+</style>
+{% endblock %}

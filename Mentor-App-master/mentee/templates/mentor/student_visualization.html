@@ -1,0 +1,871 @@
+{% extends "mentor/base1.html" %}
+{% load static %}
+{% block title %} Visualize Student's Data {% endblock %}
+
+{% block content %}
+<div class="d-flex">
+    <div class="content flex-grow-1 p-4">
+        <div class="container">
+          <!-- ✅ PAGE HEADER -->
+          <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h2 class="fw-bold text-light">Visualize Student's Data</h2>
+                <p class="text-muted mb-0" style="color:#fff !important;">
+                    Select <span class="fw-semibold">Category</span> and <span class="fw-semibold">Academic Year</span> to visualize the mentees' data and get overall or filtered reports in PDF & Excel.
+                </p>
+            </div>
+          </div>
+
+          <!-- ✅ CATEGORY SELECTION -->
+          <div class="card p-3 mb-4" style="background:#000;">
+            <div class="row align-items-center">
+              <div class="col-md-4 text-white fw-bold">
+                Select Category
+              </div>
+
+              <div class="col-md-5">
+                <select class="form-select" id="categorySelect">
+                  <option value="">-- Select Category --</option>
+                  <option value="internship">Internships / PBL</option>
+                  <option value="project">Projects</option>
+                  <option value="sports">Sports / Cultural</option>
+                  <option value="course">Courses / Certifications</option>
+                  <option value="other">Other Achievements / Hackathons</option>
+                  <option value="paper">Paper Publications</option>
+                </select>
+              </div>
+                  <div class="col-md-4 text-white fw-bold mt-2">
+                    Select Academic Year
+                  </div>
+
+                  <div class="col-md-5 mt-2">
+                    <select class="form-select" id="yearSelect">
+                      <option value="">-- All Years --</option>
+                      {% for year in academic_years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+              <div class="d-flex justify-content-between col-12 mt-2">
+                <button class="btn btn-warning w-100 fw-bold" onclick="loadCharts()">
+                  📊 Visualize Charts
+                </button>
+                <!--Progress report PDF-->
+                <button class="btn btn-danger ms-2" onclick="downloadProgressPDF()">
+                    <i class="bi bi-filetype-pdf"></i> Export Overall Progress PDF
+                </button>
+                <!--Progress report Excel-->
+                <button class="btn btn-success ms-2" onclick="downloadProgressExcel()">
+                  <i class="bi bi-filetype-xlsx"></i> Export Overall Progress Excel
+                </button>
+                <!--Filtered Progress report PDF-->
+                <button class="btn btn-outline-warning ms-2" onclick="downloadFilteredPDFWithChart()">
+                  <i class="bi bi-file-earmark-pdf"></i> Export Filtered Report
+                </button>
+                <!--Filtered Progress report Excel-->
+                <button class="btn btn-outline-primary ms-2" onclick="downloadFilteredExcel()">
+                  <i class="bi bi-file-earmark-excel"></i> Export Filtered Excel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ GRAPH CONTROL BUTTONS -->
+          <div class="text-center mb-3 d-none" id="graphButtons">
+              <button class="btn btn-light me-2" onclick="showChart('pie')"><i class="bi bi-pie-chart-fill"></i></button>
+              <button class="btn btn-light me-2" onclick="showChart('bar')"><i class="bi bi-bar-chart-fill"></i></button>
+              <button class="btn btn-light me-2" onclick="showChart('area')"><i class="bi bi-bar-chart-steps"></i></button>
+              <button class="btn btn-light me-2" onclick="showChart('line')"><i class="bi bi-graph-up-arrow"></i></button>
+              <button class="btn btn-light me-2" onclick="showHeatmap()"><i class="bi bi-grid-3x3-gap-fill"></i></button>
+<!--              <button class="btn btn-dark ms-2" onclick="compareYears()">📈 Compare Years</button>-->
+          </div>
+
+          <!-- ✅ CHART DISPLAY AREA -->
+          <div class="row justify-content-center">
+            <div class="col-lg-7">
+              <div class="card shadow-sm p-4">
+                <canvas id="barChart" class="chartBox d-none"></canvas>
+                <canvas id="pieChart" class="chartBox d-none"></canvas>
+                <canvas id="areaChart" class="chartBox d-none"></canvas>
+                <canvas id="lineChart" class="chartBox d-none"></canvas>
+                <canvas id="heatmapChart" class="chartBox d-none"></canvas>
+              </div>
+            </div>
+              <div class="text-center mt-3 d-none" id="exportBtnBox">
+                  <button class="btn btn-danger fw-bold me-2" onclick="exportSingleChartPDF()">
+                    📄 Export Current Chart (PDF)
+                  </button>
+
+                  <button class="btn btn-success fw-bold ms-2" onclick="exportChartJPG()">
+                    🖼 Download Current Chart (JPG)
+                  </button>
+                </div>
+            </div>
+    </div>
+</div>
+
+<!-- ✅ CHART.JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+.chartBox {
+  max-height: 100% !important;
+}
+</style>
+
+<script>
+// ✅ Institute Logo (Base64 OR Direct URL)
+const instituteLogoURL = "/media/logo.png";
+let pluginsRegistered = false;
+let currentCategory = null;
+
+const internshipData = {{ internship_data|safe }};
+const projectData = {{ project_data|safe }};
+const sportsData = {{ sports_data|safe }};
+const courseData = {{ course_data|safe }};
+const hackathonData = {{ hackathon_data|safe }};
+const paperData = {{ paper_data|safe }};
+
+let labels = [];
+let values = [];
+
+let barChart, pieChart, areaChart, lineChart, heatmapChart;
+
+//Chart title
+function getChartTitle(type) {
+  const categoryMap = {
+    "internship": "Internships / PBL",
+    "project": "Projects",
+    "sports": "Sports / Cultural",
+    "course": "Courses / Certifications",
+    "other": "Other Achievements / Hackathons",
+    "paper": "Paper Publications"
+  };
+
+  const chartMap = {
+    "bar": "Bar Chart",
+    "pie": "Pie Chart",
+    "area": "Stepped Area Chart",
+    "line": "Line Chart"
+  };
+
+  const selectedCategory = document.getElementById("categorySelect").value;
+
+  return categoryMap[selectedCategory] + " " + chartMap[type];
+}
+
+// ✅ VIEW CHART BUTTON
+function loadCharts() {
+  const category = document.getElementById("categorySelect").value;
+  const year = document.getElementById("yearSelect").value;
+
+  if (!category) {
+    alert("Please select a category first!");
+    return;
+  }
+
+  currentCategory = category;
+
+  fetch(`/get-chart-data/?category=${category}&year=${year}`)
+    .then(res => res.json())
+    .then(data => {
+      labels = data.labels;
+      values = data.data;
+
+      document.getElementById("graphButtons").classList.remove("d-none");
+      document.getElementById("exportBtnBox").classList.remove("d-none");
+
+      showChart("bar");
+    });
+}
+
+
+
+// ✅ DESTROY ALL CHARTS SAFELY
+function destroyCharts() {
+  if (barChart) barChart.destroy();
+  if (pieChart) pieChart.destroy();
+  if (areaChart) areaChart.destroy();
+  if (lineChart) lineChart.destroy();
+  if (heatmapChart) heatmapChart.destroy();
+}
+
+
+
+// ✅ SHOW ONLY ONE CHART
+function getSelectedYearText() {
+  const year = document.getElementById("yearSelect").value;
+  return year ? `Academic Year: ${year}` : "Academic Year: All Years";
+}
+
+function showChart(type) {
+
+  document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
+
+  destroyCharts();
+
+  const chartTitle = getChartTitle(type);
+
+  const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: true,
+        text: chartTitle,
+        font: { size: 18 },
+        padding: { top: 10, bottom: 25 }
+      },
+      subtitle: {
+        display: true,
+        text: getSelectedYearText(),
+        font: {
+          size: 14,
+          style: "italic"
+        },
+        padding: { bottom: 15 }
+      },
+      legend: {
+        display: true,
+        position: "right"
+      }
+    },
+    scales: {
+    x: {
+      title: {
+        display: true,
+        text: "Students"
+      },
+      ticks: {
+        autoSkip: false // prevents label hiding
+      }
+    },
+    y: {
+      title: {
+        display: true,
+        text: "Count"
+      },
+      beginAtZero: true
+    }
+  }
+};
+
+  if (type === "bar") {
+      const ctx = document.getElementById("barChart");
+      ctx.classList.remove("d-none");
+      resizeCanvas("barChart", labels.length, 450);
+
+      barChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Count",
+            data: values,
+            backgroundColor: [
+              "#0d6efd","#198754","#dc3545","#ffc107",
+              "#6610f2","#20c997","#fd7e14"
+            ]
+          }]
+        },
+        options: {
+          ...commonOptions,
+
+          // ✅ CLICK ON BAR -> DOWNLOAD EXCEL
+          onClick: function(evt, elements) {
+            if (!elements || !elements.length) return;
+
+            const year = document.getElementById("yearSelect").value;
+            const index = elements[0].index;
+            const student = labels[index]; // student label from x-axis
+
+            if (!student || student === "N/A" || student === "Unknown") {
+              alert("Invalid department selected.");
+              return;
+            }
+
+            // ✅ download Excel
+            const url = `/mentor/export-dept-excel/?category=${encodeURIComponent(currentCategory)}&student=${encodeURIComponent(student)}&year=${encodeURIComponent(year)}`;
+            window.location.href = url;
+          }
+        }
+      });
+      fetch(`/get-department-trends/?category=${currentCategory}`)
+      .then(res => res.json())
+      .then(data => {
+
+        // 🔥 Glow plugin
+        const glowPlugin = {
+          id: "glowEffect",
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+
+            chart.getDatasetMeta(0).data.forEach((bar, i) => {
+              const student = chart.data.labels?.[i];
+              if (!student) return;
+              if (!data.trends || !data.trends[student]) return;
+              const trend = data.trends[student];
+
+              if (!trend) return;
+
+              ctx.save();
+
+              if (trend === "up") {
+                ctx.shadowColor = "rgba(25, 135, 84, 0.8)";
+              } else if (trend === "down") {
+                ctx.shadowColor = "rgba(220, 53, 69, 0.8)";
+              } else {
+                ctx.shadowColor = "rgba(255, 193, 7, 0.8)";
+              }
+
+              ctx.shadowBlur = 15;
+              ctx.shadowOffsetX = 0;
+              ctx.shadowOffsetY = 0;
+
+              bar.draw(ctx);
+              ctx.restore();
+            });
+          }
+        };
+
+        // 📊 Tooltip with % change
+        barChart.options.plugins.tooltip = {
+          callbacks: {
+            afterLabel: function(ctx) {
+              const student = ctx.label;
+
+              if (!data.trends || !data.trends[student]) {
+                return "Trend: No data";
+              }
+
+              const trend = data.trends[student];
+              const pct = data.percentages?.[student] ?? 0;
+
+              let arrow = "→";
+              let word = "Stable";
+
+              if (trend === "up") {
+                arrow = "↑";
+                word = "Growth";
+              } else if (trend === "down") {
+                arrow = "↓";
+                word = "Decline";
+              }
+
+              const sign = pct > 0 ? "+" : "";
+              return `Trend: ${arrow} ${word} (${sign}${pct}%)`;
+            }
+
+          }
+        };
+
+        // 🏷 % labels above bars
+        const labelPlugin = {
+          id: "percentLabels",
+          afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+
+            ctx.save();
+            ctx.font = "bold 12px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+
+            chart.getDatasetMeta(0).data.forEach((bar, i) => {
+              const student = chart.data.labels[i];
+              const pct = data.percentages?.[student];
+
+              if (pct === undefined) return;
+
+              const sign = pct > 0 ? "+" : "";
+              ctx.fillText(
+                `${sign}${pct}%`,
+                bar.x,
+                bar.y - 8
+              );
+            });
+
+            ctx.restore();
+          }
+        };
+
+        if (!pluginsRegistered) {
+          Chart.register(glowPlugin);
+          Chart.register(labelPlugin);
+          pluginsRegistered = true;
+        }
+
+        barChart.update();
+      });
+      }
+
+      if (type === "pie") {
+        const ctx = document.getElementById("pieChart");
+        ctx.classList.remove("d-none");
+        resizeCanvas("pieChart", labels.length, 400);
+        pieChart = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: labels,
+            datasets: [{
+              data: values,
+              backgroundColor: [
+                "#0d6efd","#198754","#dc3545","#ffc107",
+                "#6610f2","#20c997","#fd7e14"
+              ]
+            }]
+          },
+          options: commonOptions
+        });
+  }
+
+  if (type === "area") {
+    const ctx = document.getElementById("areaChart");
+    ctx.classList.remove("d-none");
+    resizeCanvas("areaChart", labels.length, 450);
+
+    areaChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Count",
+          data: values,
+          fill: true,
+          stepped: true,
+          backgroundColor: "rgba(13,110,253,0.2)",
+          borderColor: "#0d6efd"
+        }]
+      },
+      options: commonOptions
+    });
+  }
+
+  if (type === "line") {
+    const ctx = document.getElementById("lineChart");
+    ctx.classList.remove("d-none");
+    resizeCanvas("lineChart", labels.length, 450);
+
+    lineChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Count",
+          data: values,
+          fill: false,
+          borderColor: "#dc3545",
+          tension: 0.3
+        }]
+      },
+      options: commonOptions
+    });
+  }
+}
+
+//TITLE + TIMESTAMP
+function getChartMeta() {
+
+  const categoryText =
+    document.getElementById("categorySelect")
+    .options[document.getElementById("categorySelect").selectedIndex]
+    .text;
+
+  let chartType = "Chart";
+
+  if (!document.getElementById("barChart").classList.contains("d-none")) chartType = "Bar Chart";
+  if (!document.getElementById("pieChart").classList.contains("d-none")) chartType = "Pie Chart";
+  if (!document.getElementById("areaChart").classList.contains("d-none")) chartType = "Stepped Area Chart";
+  if (!document.getElementById("lineChart").classList.contains("d-none")) chartType = "Line Chart";
+
+  const now = new Date();
+  const ts = now.toLocaleString();
+
+  return {
+    title: `${categoryText} - ${chartType}`,
+    timestamp: ts
+  };
+}
+
+
+//Export Single Chart to PDF
+function exportSingleChartPDF() {
+
+  const activeCanvas = document.querySelector(".chartBox:not(.d-none)");
+
+  if (!activeCanvas) {
+    alert("No chart visible to export!");
+    return;
+  }
+
+  const { title, timestamp } = getChartMeta();
+
+  const chartImage = activeCanvas.toDataURL("image/png", 1.0);
+
+  const pdf = new jspdf.jsPDF("landscape");
+
+  const logoImg = new Image();
+  logoImg.src = instituteLogoURL;
+
+  logoImg.onload = function () {
+
+    // ✅ LOGO
+    pdf.addImage(logoImg, "PNG", 10, 8, 35, 20);
+
+    // ✅ TITLE
+    pdf.setFontSize(16);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(title, 50, 20);
+
+    // ✅ TIMESTAMP
+    pdf.setFontSize(11);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Generated on: " + timestamp, 50, 30);
+
+    // ✅ CHART
+    pdf.addImage(chartImage, "PNG", 10, 40, 270, 140);
+
+    const cleanName = title.replace(/[^a-zA-Z0-9 ]/g, "_");
+
+    pdf.save(cleanName + ".pdf");
+  };
+}
+
+
+// Export to JPG
+function exportChartJPG() {
+
+  let activeCanvas = document.querySelector(".chartBox:not(.d-none)");
+
+  if (!activeCanvas) {
+    alert("No chart visible to download!");
+    return;
+  }
+
+  const { title, timestamp } = getChartMeta();
+
+  const tempCanvas = document.createElement("canvas");
+  const ctx = tempCanvas.getContext("2d");
+
+  tempCanvas.width = activeCanvas.width;
+  tempCanvas.height = activeCanvas.height + 90;
+
+  // ✅ Background
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+  // ✅ TITLE
+  ctx.fillStyle = "black";
+  ctx.font = "bold 22px Arial";
+  ctx.fillText(title, 20, 30);
+
+  // ✅ TIMESTAMP
+  ctx.font = "14px Arial";
+  ctx.fillText("Generated on: " + timestamp, 20, 55);
+
+  // ✅ DRAW CHART
+  ctx.drawImage(activeCanvas, 0, 90);
+
+  const imageData = tempCanvas.toDataURL("image/jpeg", 1.0);
+
+  const cleanTitle = title.replace(/[^a-zA-Z0-9 ]/g, "_");
+
+  const link = document.createElement("a");
+  link.href = imageData;
+  link.download = cleanTitle + ".jpg";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Compare years
+function compareYears() {
+  const category = document.getElementById("categorySelect").value;
+
+  if (!category) {
+    alert("Select a category first!");
+    return;
+  }
+
+  fetch(`/get-chart-data-compare/?category=${category}`)
+    .then(res => res.json())
+    .then(res => {
+
+      labels = res.labels;
+      destroyCharts();
+
+      document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
+      const ctx = document.getElementById("lineChart");
+      ctx.classList.remove("d-none");
+      resizeCanvas("lineChart", res.labels.length, 450);
+
+      lineChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: res.datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            tension: 0.3,
+            fill: false
+          }))
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: "Department-wise Comparison Across Academic Years",
+              font: { size: 18 }
+            },
+            legend: {
+              position: "bottom"
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Academic Years"
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Count"
+              }
+            }
+          }
+        }
+      });
+
+    });
+}
+
+// Heatmap
+function showHeatmap() {
+  const category = document.getElementById("categorySelect").value;
+  if (!category) {
+    alert("Select a category first!");
+    return;
+  }
+
+  fetch(`/get-heatmap-data/?category=${category}`)
+    .then(res => res.json())
+    .then(res => {
+
+      destroyCharts();
+      document.querySelectorAll(".chartBox").forEach(c => c.classList.add("d-none"));
+
+      const ctx = document.getElementById("heatmapChart");
+      ctx.classList.remove("d-none");
+
+      resizeCanvas("heatmapChart", res.students.length, res.years.length * 80);
+
+      const datasets = [];
+      const maxValue = Math.max(...res.matrix.flat(), 1);
+
+      res.years.forEach((year, rowIndex) => {
+        res.matrix[rowIndex].forEach((value, colIndex) => {
+          const intensity = value / maxValue;
+          datasets.push({
+            label: `${year} - ${res.students[colIndex]}`,
+            data: [{ x: res.students[colIndex], y: year, v: value }],
+            backgroundColor: `rgba(220, 53, 69, ${0.2 + intensity * 0.8})`,
+            borderWidth: 1
+          });
+        });
+      });
+
+      heatmapChart = new Chart(ctx, {
+        type: "scatter",
+        data: { datasets: datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => `Count: ${ctx.raw.v}`
+              }
+            },
+            title: {
+              display: true,
+              text: "Academic Year v/s Students Heatmap"
+            }
+          },
+          scales: {
+            x: {
+              type: "category",
+              labels: res.students,
+              title: { display: true, text: "Students" }
+            },
+            y: {
+              type: "category",
+              labels: res.years,
+              title: { display: true, text: "Academic Years" }
+            }
+          }
+        }
+      });
+    });
+}
+
+// Overall Progress report PDF
+function downloadProgressPDF() {
+  window.location.href = "/export-progress-pdf/";
+}
+
+// Overall Progress report Excel
+function downloadProgressExcel() {
+  const btn = event?.target;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "Generating Excel...";
+  }
+
+  fetch("/export-progress-excel/", {
+    method: "GET",
+    headers: {
+      "X-Requested-With": "XMLHttpRequest"
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Failed to generate Excel file");
+    }
+    return response.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Mentor_Mentee_Progress.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  })
+  .catch(err => {
+    alert("Export failed: " + err.message);
+  })
+  .finally(() => {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "Export Excel Report";
+    }
+  });
+}
+
+
+// Resize the charts
+function resizeCanvas(canvasId, labelCount, baseHeight = 400) {
+  const canvas = document.getElementById(canvasId);
+
+  // Increase height based on data size
+  const dynamicHeight = Math.max(baseHeight, labelCount * 60);
+
+  canvas.style.height = dynamicHeight + "px";
+  canvas.style.width = "100%";
+  canvas.height = dynamicHeight;
+}
+
+
+function getCSRFToken() {
+  return document.cookie
+    .split("; ")
+    .find(row => row.startsWith("csrftoken="))
+    ?.split("=")[1];
+}
+
+// Export filtered report
+function downloadFilteredPDFWithChart() {
+  const canvas = document.querySelector(".chartBox:not(.d-none)");
+  if (!canvas) {
+    alert("Please generate a chart first");
+    return;
+  }
+
+  const year = document.getElementById("yearSelect").value;
+  const category = document.getElementById("categorySelect").value;
+
+  if (!year || !category) {
+    alert("Select category and academic year");
+    return;
+  }
+
+  const chartImage = canvas.toDataURL("image/png");
+
+  fetch("/export-filtered-progress-pdf/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCSRFToken()
+    },
+    body: JSON.stringify({
+      year: year,
+      category: category,
+      chart: chartImage
+    })
+  })
+  .then(res => res.blob())
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${category}_${year}_Progress_Report.pdf`;
+    a.click();
+  });
+}
+
+// Export filtered Excel
+function downloadFilteredExcel() {
+  const year = document.getElementById("yearSelect").value;
+  const category = document.getElementById("categorySelect").value;
+
+  if (!year || !category) {
+    alert("Please select academic year and category");
+    return;
+  }
+
+  const canvas = document.querySelector(".chartBox:not(.d-none)");
+  if (!canvas) {
+    alert("No chart visible");
+    return;
+  }
+
+  const chartB64 = canvas.toDataURL("image/png");
+
+  fetch("/export-filtered-progress-excel/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCSRFToken()
+    },
+    body: JSON.stringify({
+      year: year,
+      category: category,
+      chart: chartB64
+    })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Excel export failed");
+    return res.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${category}_${year}_Progress_Report.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  })
+  .catch(err => alert(err.message));
+}
+
+</script>
+{% endblock %}

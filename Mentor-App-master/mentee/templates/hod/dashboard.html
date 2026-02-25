@@ -1,0 +1,470 @@
+{% extends 'mentor/base1.html' %}
+{% load static %}
+{% block title %} HOD Dashboard {% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Header + Export -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1 text-light">HOD Dashboard</h2>
+      <p class="text-muted mb-0" style="color: #fff !important;">Completion readiness overview of all mentees.</p>
+    </div>
+      <form method="post" action="{% url 'hod_remind_all_pending' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-warning"
+              onclick="return confirm('Send reminders to all mentees with pending documents?');">
+        <i class="bi bi-bell"></i> Remind All (Pending)
+      </button>
+    </form>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'hod_export_excel' %}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Export Excel
+      </a>
+      <a href="{% url 'hod_export_pdf' %}" class="btn btn-danger">
+        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body p-0">
+          <div class="small text-muted">Total Mentors</div>
+          <div class="fs-3 fw-semibold">{{ total_mentors }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body p-0">
+          <div class="small text-muted">Total Mentees</div>
+          <div class="fs-3 fw-semibold">{{ total_mentees }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body p-0">
+          <div class="small text-muted">Completion Ready (7/7)</div>
+          <div class="fs-3 fw-semibold text-success">{{ ready_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card shadow-sm border-0 stat-card">
+        <div class="card-body p-0">
+          <div class="small text-muted">Overall Readiness</div>
+          <div class="fs-3 fw-semibold">{{ placement_ready_percent }}%</div>
+          <div class="progress mt-2" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar"
+                 style="width: {{ placement_ready_percent }}%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Readiness breakdown -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body p-0">
+          <h5 class="card-title mb-3">Completion Breakdown</h5>
+          <div class="d-flex flex-wrap gap-3">
+            <div>
+              <span class="badge bg-success rounded-pill px-3 py-2">
+                Ready: {{ ready_count }}
+              </span>
+            </div>
+            <div>
+              <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                Partial: {{ partial_count }}
+              </span>
+            </div>
+            <div>
+              <span class="badge bg-danger rounded-pill px-3 py-2">
+                Not Started: {{ not_started_count }}
+              </span>
+            </div>
+          </div><br>
+            <ul><li>Ready = 7/7 </li> <li>Partial = between 1 and 6</li> <li>Not started = 0/7</li></ul><hr>
+            <p class="text-muted mt-3 mb-0 small">
+                Note: Completion criteria based on *Categories of Documents*<br>Categories of Documents = 7
+                (Internships, Sports/Cultural, Projects, Other Achievements, Certifications, Paper Publications, Semester Results)
+            </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mentee Filters + search -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body p-0">
+          <h5 class="card-title mb-3">Mentee Filters</h5>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button class="btn btn-outline-dark btn-sm active" data-filter="all">All</button>
+            <button class="btn btn-outline-success btn-sm" data-filter="ready">Ready</button>
+            <button class="btn btn-outline-warning btn-sm" data-filter="partial">Partial</button>
+            <button class="btn btn-outline-danger btn-sm" data-filter="not_started">Not Started</button>
+          </div>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="menteeSearch" class="form-control"
+                   placeholder="Search by Mentee name or Moodle ID or department or semester or Mentor name...">
+          </div><br>
+          <!-- Mentor filter + search -->
+          <h5 class="card-title mb-2">Mentor Filters</h5>
+          <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" id="mentorSearch" class="form-control" placeholder="Search by mentor name or department...">
+          </div><hr>
+            <ul class="text-muted mt-2 mb-0 small">
+              <li>Filters apply to the below tables in real time.</li>
+              <li>Just type and the filter will be applied automatically.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mentor-wise analytics -->
+  <div class="card shadow-sm border-0 mb-4 p-0">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <span>Mentor-wise Progress Analytics</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0 text-center align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Sr. No.</th>
+              <th>Mentor</th>
+              <th>Department</th>
+              <th>Total Mentees</th>
+              <th>Ready</th>
+              <th>Partial</th>
+              <th>Not Started</th>
+              <th>Avg Progress</th>
+            </tr>
+          </thead>
+          <tbody id="mentorTableBody">
+            {% for m in mentor_stats %}
+            <tr data-name="{{ m.mentor_name|lower }}" data-department="{{ m.department|lower }}">
+              <td>{{ forloop.counter }}</td>
+              <td>{{ m.mentor_name }}</td>
+              <td>{{ m.department }}</td>
+              <td>{{ m.total_mentees }}</td>
+              <td class="text-success fw-semibold">{{ m.ready }}</td>
+              <td class="text-warning fw-semibold">{{ m.partial }}</td>
+              <td class="text-danger fw-semibold">{{ m.not_started }}</td>
+              <td style="min-width:150px;">
+                <div class="fw-bold mb-1">{{ m.avg_progress_percent }}%</div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar
+                    {% if m.avg_progress_percent < 40 %} bg-danger
+                    {% elif m.avg_progress_percent < 80 %} bg-warning
+                    {% else %} bg-success {% endif %}"
+                    role="progressbar"
+                    style="width: {{ m.avg_progress_percent }}%;">
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">No mentors found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+      <div class="d-flex justify-content-center mt-2">
+        <nav>
+            <ul class="pagination pagination-sm" id="mentorPagination"></ul>
+        </nav>
+    </div>
+  </div>
+
+  <!-- Per-mentee list -->
+  <div class="card shadow-sm border-0 mb-4 p-0">
+    <div class="card-header bg-dark text-white">
+      Mentees & their Progress
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table id="menteesTable" class="table table-hover mb-0 text-center align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Moodle Id</th>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Semester</th>
+              <th>Contact</th>
+              <th>Mentor</th>
+              <th>Progress</th>
+              <th>Reminder</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in mentees_list %}
+            <tr
+              data-readiness="{{ s.readiness }}"
+              data-name="{{ s.student_name|lower }}"
+              data-moodle="{{ s.moodle_id|lower }}"
+              data-department="{{ s.department|default_if_none:''|lower }}"
+              data-semester="{{ s.semester|default_if_none:''|lower }}"
+              data-mentor="{{ s.mentor_name|default_if_none:''|lower }}"
+            >
+              <td>{{ s.moodle_id }}</td>
+              <td>{{ s.student_name }}</td>
+              <td>{{ s.department }}</td>
+              <td>{{ s.semester }}</td>
+              <td>{{ s.contact }}</td>
+              <td>{{ s.mentor_name }}</td>
+              <td style="min-width:160px;">
+                <div class="fw-bold mb-1">{{ s.progress }}</div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar
+                    {% if s.progress_percent < 40 %} bg-danger
+                    {% elif s.progress_percent < 80 %} bg-warning
+                    {% else %} bg-success {% endif %}"
+                    role="progressbar"
+                    style="width: {{ s.progress_percent }}%;">
+                  </div>
+                </div>
+              </td>
+              <td>
+                  {% if s.readiness != "ready" %}
+                    <form method="post" action="{% url 'hod_remind_mentee' s.mentee_id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-warning btn-sm"
+                              onclick="return confirm('Send reminder to {{ s.student_name }}?');">
+                        <i class="bi bi-bell"></i> Remind
+                      </button>
+                    </form>
+                  {% else %}
+                    <span class="badge bg-success">Completed</span>
+                  {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">No mentees data available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+      <div class="d-flex justify-content-center mt-2">
+        <nav>
+            <ul class="pagination pagination-sm" id="menteePagination"></ul>
+        </nav>
+      </div>
+  </div>
+</div>
+
+<style>
+  .stat-card {
+    border-radius: 0.75rem;
+  }
+  .stat-card .fs-3 {
+    letter-spacing: 0.02em;
+  }
+  @media (max-width: 576px) {
+    h2 { font-size: 1.4rem; }
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  /* --------------------------------------------------
+     1. INITIALIZE FILTER STATE FOR ALL ROWS
+  -------------------------------------------------- */
+  document
+    .querySelectorAll("#mentorTableBody tr, #menteesTable tbody tr")
+    .forEach(row => row.dataset.filtered = "1");
+
+  /* --------------------------------------------------
+     2. PAGINATION ENGINE (STABLE)
+  -------------------------------------------------- */
+  function paginateTable({ tableBodySelector, paginationSelector, rowsPerPage }) {
+    const tableBody = document.querySelector(tableBodySelector);
+    const pagination = document.querySelector(paginationSelector);
+    const allRows = Array.from(tableBody.querySelectorAll("tr"));
+    let currentPage = 1;
+
+    function getFilteredRows() {
+      return allRows.filter(r => r.dataset.filtered === "1");
+    }
+
+    function render() {
+      const rows = getFilteredRows();
+      const totalPages = Math.ceil(rows.length / rowsPerPage) || 1;
+
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      allRows.forEach(r => r.style.display = "none");
+
+      rows.forEach((row, index) => {
+        if (
+          index >= (currentPage - 1) * rowsPerPage &&
+          index < currentPage * rowsPerPage
+        ) {
+          row.style.display = "";
+        }
+      });
+
+      renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+      pagination.innerHTML = "";
+      if (totalPages <= 1) return;
+
+      // ⬅ PREVIOUS
+      const prev = document.createElement("li");
+      prev.className = `page-item ${currentPage === 1 ? "disabled" : ""}`;
+      prev.innerHTML = `<a class="page-link" href="#">‹</a>`;
+      prev.onclick = e => {
+        e.preventDefault();
+        if (currentPage > 1) {
+          currentPage--;
+          render();
+        }
+      };
+      pagination.appendChild(prev);
+
+      // PAGE NUMBERS
+      for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = `page-item ${i === currentPage ? "active" : ""}`;
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.onclick = e => {
+          e.preventDefault();
+          currentPage = i;
+          render();
+        };
+        pagination.appendChild(li);
+      }
+
+      // ➡ NEXT
+      const next = document.createElement("li");
+      next.className = `page-item ${currentPage === totalPages ? "disabled" : ""}`;
+      next.innerHTML = `<a class="page-link" href="#">›</a>`;
+      next.onclick = e => {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+          currentPage++;
+          render();
+        }
+      };
+      pagination.appendChild(next);
+    }
+
+    return {
+      refresh() {
+        currentPage = 1;
+        render();
+      }
+    };
+  }
+
+  /* --------------------------------------------------
+     3. INIT PAGINATION
+  -------------------------------------------------- */
+  window.mentorPager = paginateTable({
+    tableBodySelector: "#mentorTableBody",
+    paginationSelector: "#mentorPagination",
+    rowsPerPage: 10
+  });
+
+  window.menteePager = paginateTable({
+    tableBodySelector: "#menteesTable tbody",
+    paginationSelector: "#menteePagination",
+    rowsPerPage: 30
+  });
+
+  mentorPager.refresh();
+  menteePager.refresh();
+
+  /* --------------------------------------------------
+     4. MENTEE FILTERS
+  -------------------------------------------------- */
+  const menteeRows = document.querySelectorAll("#menteesTable tbody tr");
+  const filterButtons = document.querySelectorAll("[data-filter]");
+  const menteeSearch = document.getElementById("menteeSearch");
+
+  let activeFilter = "all";
+
+  function applyMenteeFilters() {
+    const query = menteeSearch.value.toLowerCase().trim();
+
+    menteeRows.forEach(row => {
+      let visible = true;
+
+      if (activeFilter !== "all" && row.dataset.readiness !== activeFilter) {
+        visible = false;
+      }
+
+      if (visible && query) {
+        const text = `
+          ${row.dataset.name}
+          ${row.dataset.moodle}
+          ${row.dataset.department}
+          ${row.dataset.semester}
+          ${row.dataset.mentor}
+        `;
+        if (!text.includes(query)) visible = false;
+      }
+
+      row.dataset.filtered = visible ? "1" : "0";
+    });
+
+    menteePager.refresh();
+  }
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      filterButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeFilter = btn.dataset.filter;
+      applyMenteeFilters();
+    });
+  });
+
+  menteeSearch.addEventListener("input", applyMenteeFilters);
+
+  /* --------------------------------------------------
+     5. MENTOR SEARCH FILTER
+  -------------------------------------------------- */
+  const mentorRows = document.querySelectorAll("#mentorTableBody tr");
+  const mentorSearch = document.getElementById("mentorSearch");
+
+  function applyMentorFilter() {
+    const query = mentorSearch.value.toLowerCase().trim();
+
+    mentorRows.forEach(row => {
+      const name = row.dataset.name || "";
+      const dept = row.dataset.department || "";
+
+      row.dataset.filtered =
+        !query || name.includes(query) || dept.includes(query)
+          ? "1"
+          : "0";
+    });
+
+    mentorPager.refresh();
+  }
+
+  mentorSearch.addEventListener("input", applyMentorFilter);
+
+});
+</script>
+{% endblock %}

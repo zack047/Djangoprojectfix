@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <title>Student Diary</title>
+  </head>
+<body>
+<!-- Sidebar -->
+    <div id="sidebar" class="sidebar active bg-steel text-white p-3">
+        <!-- User Info -->
+        {% if user.is_authenticated and user.profile %}
+        <div class="text-center mb-3">
+            {% if user.profile.image %}
+            <img src="{{ user.profile.image.url }}"
+                 alt="Profile Pic"
+                 class="rounded-circle border shadow-sm mb-2"
+                 style="width:80px; height:80px; object-fit:cover;">
+            {% else %}
+            <img src="/media/default.png"
+                 class="rounded-circle shadow-sm border border-3 border-light"
+                 style="width:80px; height:80px; object-fit: cover;">
+            {% endif %}
+        </div>
+        <h5 class="fw-semibold">{{ user.profile.student_name|default:user.get_full_name }}</h5>
+        <small><b>ID: {{ user.profile.moodle_id }}</b></small><br>
+        <small><b>{{ user.profile.branch }} - {{ user.profile.year }}</b></small><hr>
+        {% else %}
+            <img src="/media/default.png"
+                 alt="Profile Pic"
+                 class="rounded-circle border shadow-sm mb-2"
+                 style="width:80px; height:80px; object-fit:cover;">
+
+            <h5 class="fw-semibold">Guest User</h5>
+            <small><b>Please log in</b></small>
+        {% endif %}
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item"><a href="{% url 'mentee-home' %}" class="nav-link text-white">Home</a></li>
+            <li class="nav-item"><a href="{% url 'profile' %}" class="nav-link text-white">Profile</a></li>
+
+            <!-- Activities dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#activitiesMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="activitiesMenu">
+                <span>Activities</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="activitiesMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="{% url 'internship-pbl-list' %}" class="nav-link text-white">Internship/PBL</a></li>
+                  <li><a href="{% url 'projects-list' %}" class="nav-link text-white">Projects</a></li>
+                  <li><a href="{% url 'sports-and-cultural' %}" class="nav-link text-white">Sports and Cultural</a></li>
+                  <li><a href="{% url 'other-events' %}" class="nav-link text-white">Other Achievements</a></li>
+                </ul>
+              </div>
+            </li>
+
+
+            <!-- Certifications dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#certMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="certMenu">
+                <span>Certifications</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="certMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="{% url 'certifications' %}" class="nav-link text-white">Certifications/Courses</a></li>
+                  <li><a href="{% url 'publications' %}" class="nav-link text-white">Paper Publications</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <!-- Assessment dropdown -->
+            <li class="nav-item">
+              <a class="nav-link text-white d-flex align-items-center justify-content-between" data-bs-toggle="collapse"
+                 href="#assessmentMenu"
+                 role="button"
+                 aria-expanded="false"
+                 aria-controls="assessmentMenu">
+                <span>Assessment</span>
+                <i class="bi bi-chevron-down toggle-icon"></i>
+              </a>
+              <div class="collapse" id="assessmentMenu">
+                <ul class="nav flex-column ms-3">
+                  <li><a href="{% url 'self_assessment' %}" class="nav-link text-white">Self Assessment</a></li>
+                  <li><a href="{% url 'long_term_goals' %}" class="nav-link text-white">Long Term Goals</a></li>
+                  <li><a href="{% url 'educational-details' %}" class="nav-link text-white">Educational Details</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="nav-item"><a href="{% url 'account' %}" class="nav-link text-white">Mentor</a></li>
+            <li class="nav-item"><a href="{% url 'module-message' %}" class="nav-link text-white">Messages</a></li>
+            <li class="nav-item"><a href="{% url 'semester_results' %}" class="nav-link text-white">Semester Results</a></li>
+            <li class="nav-item"><a href="{% url 'student_interests' %}" class="nav-link text-white">Student Interests</a></li>
+            <li class="nav-item"><a href="{% url 'uploaded_documents' %}" class="nav-link text-white">Your Uploaded Documents</a></li>
+            <li class="nav-item"><a href="{% url 'credits' %}" class="nav-link text-white">Credits</a></li>
+            <li class="nav-item"><a href="{% url 'logout' %}" class="nav-link text-white">Logout</a></li>
+        </ul>
+        <hr>
+        <a class="btn btn-light btn-sm w-100" href="{% url 'student_profile_overview' %}">Generate Profile Overview</a>
+    </div>
+</body>
+</html>

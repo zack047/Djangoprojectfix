@@ -1,0 +1,33 @@
+{% extends 'mentor/base1.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+
+<p><b>Message Content</b></p>
+
+
+<p>From: {{ messo.sender }} </p>
+<p>Message:  {{ messo.msg_content }}</p>
+<div class="container">
+
+
+    <p><a class="btn btn-warning" href="{% url 'comment' pk=messo.pk %}">Approve</a></p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}

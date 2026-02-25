@@ -1,0 +1,23 @@
+{% extends 'menti/base.html' %}
+
+{% block title %} Inbox {% endblock %}
+{% block content %}<br>
+<h1 class="text-light">Here Are Your Inbox Messages</h1>
+     {% if inbox %}
+      <ol>
+          {% for messo in inbox %}
+
+          <h2><li><a href="{% url 'detail-inbox' pk=messo.pk %}">From {{ messo.sender }}  </a></li></h2>
+
+          {% endfor %}
+      </ol>
+{% else %}
+<p class="text-light">There Are no Inbox Messages!!!</p>
+{% endif %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+    <a href="{% url 'module-message' %}"
+       class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+        <i class="bi bi-arrow-left-circle"></i> Back
+    </a>
+</div>
+{% endblock %}

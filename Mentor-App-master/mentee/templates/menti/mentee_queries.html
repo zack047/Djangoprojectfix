@@ -1,0 +1,104 @@
+{% extends 'menti/base.html' %}
+{% load humanize %}
+{% load static %}
+{% block title %} Queries {% endblock %}
+{% block content %}
+<br>
+<div class="row">
+    <div class="col-md-12">
+        <div class="content-section">
+            <h1 class="text-light">My Queries</h1><br>
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Sr. No.</th>
+                            <th>Query</th>
+                            <th>Submitted At</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if queries %}
+                            {% for query in queries %}
+                                <tr>
+                                    <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                                    <td>{{ query.text }}</td>
+                                    <td>{{ query.created_at|naturaltime }}</td>
+                                    <td>
+                                        {% if query.severity == "critical" %}
+                                            <span class="badge bg-danger">Critical</span>
+                                        {% elif query.severity == "moderate" %}
+                                            <span class="badge bg-warning text-dark">Moderate</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if query.status == "pending" %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Resolved</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="5">You have not submitted any queries yet.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<nav class="mt-4">
+  <ul class="pagination justify-content-center">
+
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+          Previous
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Previous</span>
+      </li>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <li class="page-item active">
+          <span class="page-link">{{ num }}</span>
+        </li>
+      {% else %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+          Next
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Next</span>
+      </li>
+    {% endif %}
+
+  </ul>
+</nav>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+    <a href="{% url 'module-message' %}"
+       class="btn btn-warning btn-lg rounded-pill px-4 shadow-sm mx-5">
+        <i class="bi bi-arrow-left-circle"></i> Back
+    </a>
+</div>
+{% endblock %}
