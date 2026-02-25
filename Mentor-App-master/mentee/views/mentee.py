@@ -15,6 +15,14 @@ from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project,
                       EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query,
                       MentorMenteeInteraction, StudentProfileOverview, Notification)
 from ..utils import compute_profile_completeness, mentee_required
+from ..auth_otp import (
+    REG_MENTEE_OTP_SESSION_KEY,
+    OTP_DIGITS,
+    create_login_otp_challenge,
+    get_login_otp_state,
+    mask_email,
+    verify_login_otp as verify_login_otp_code,
+)
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -255,13 +263,31 @@ def register(request):
         form1 = MenteeRegisterForm(request.POST)
 
         if form1.is_valid():
-            user = form1.save()
+            user = form1.save(commit=False)
             user.is_mentee = True
+            user.is_active = False
             user.save()
 
             registered = True
-            messages.success(request, f'Your account has been created! You will now be able to log in')
-            return redirect('login')
+            try:
+                masked_email, sent_now, wait_seconds = create_login_otp_challenge(
+                    request=request,
+                    user=user,
+                    session_key=REG_MENTEE_OTP_SESSION_KEY,
+                    scope="mentee-register",
+                    verify_url=request.build_absolute_uri(reverse("verify_register_otp")),
+                    portal_label="MentorConnect Registration",
+                )
+                if sent_now:
+                    messages.success(request, f"OTP sent to {masked_email}. Verify to activate your account.")
+                else:
+                    messages.info(request, f"OTP already sent. Please wait {wait_seconds}s to resend.")
+            except Exception:
+                logger.exception("Failed to send registration OTP for mentee user_id=%s", user.pk)
+                messages.error(request, "Could not send OTP. Please try again.")
+                return redirect("register")
+
+            return redirect('verify_register_otp')
     else:
         form1 = MenteeRegisterForm()
 
@@ -300,6 +326,74 @@ def user_login(request):
 def custom_logout(request):
     logout(request)
     return redirect('login')
+
+
+def verify_register_otp(request):
+    otp_state = get_login_otp_state(request, REG_MENTEE_OTP_SESSION_KEY)
+    if not otp_state:
+        messages.error(request, "Registration OTP session expired. Please register again.")
+        return redirect("register")
+
+    if request.method == "POST":
+        action = request.POST.get("action", "verify")
+        pending_user = User.objects.filter(pk=otp_state.get("user_id")).first()
+
+        if action == "resend":
+            if not pending_user or not pending_user.email:
+                messages.error(request, "Unable to resend OTP. Please register again.")
+                return redirect("register")
+            try:
+                masked_email, sent_now, wait_seconds = create_login_otp_challenge(
+                    request=request,
+                    user=pending_user,
+                    session_key=REG_MENTEE_OTP_SESSION_KEY,
+                    scope="mentee-register",
+                    verify_url=request.build_absolute_uri(reverse("verify_register_otp")),
+                    portal_label="MentorConnect Registration",
+                )
+                if sent_now:
+                    messages.success(request, f"A new OTP has been sent to {masked_email}.")
+                else:
+                    messages.info(request, f"Please wait {wait_seconds}s before resending OTP.")
+            except Exception:
+                logger.exception("Failed to resend OTP email for user_id=%s", otp_state.get("user_id"))
+                messages.error(request, "Could not resend OTP right now. Please try again.")
+            return redirect("verify_register_otp")
+
+        otp_input = request.POST.get("otp", "").strip()
+        is_valid, reason, verified_user = verify_login_otp_code(
+            request=request,
+            user_model=User,
+            session_key=REG_MENTEE_OTP_SESSION_KEY,
+            scope="mentee-register",
+            otp_input=otp_input,
+        )
+
+        if is_valid:
+            verified_user.is_active = True
+            verified_user.save(update_fields=["is_active"])
+            login(request, verified_user)
+            request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+            messages.success(request, "Registration verified. You are now logged in.")
+            return HttpResponseRedirect(reverse("mentee-home"))
+
+        if reason == "expired":
+            messages.error(request, "OTP expired. Please register again.")
+            return redirect("register")
+        if reason == "locked":
+            messages.error(request, "Too many wrong OTP attempts. Please register again.")
+            return redirect("register")
+        if reason == "invalid_format":
+            messages.error(request, f"Enter a valid {OTP_DIGITS}-digit OTP.")
+        else:
+            latest_state = get_login_otp_state(request, REG_MENTEE_OTP_SESSION_KEY) or {}
+            attempts_left = latest_state.get("attempts_left", 0)
+            messages.error(request, f"Invalid OTP. Attempts left: {attempts_left}")
+
+    otp_state = get_login_otp_state(request, REG_MENTEE_OTP_SESSION_KEY) or {}
+    pending_user = User.objects.filter(pk=otp_state.get("user_id")).only("email").first()
+    email_hint = mask_email(pending_user.email) if pending_user else ""
+    return render(request, "menti/verify_otp.html", {"email_hint": email_hint, "otp_digits": OTP_DIGITS})
 
 
 #-----------------forget password logic starts---------------------

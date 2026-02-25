@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentorConnect - Verify OTP</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: #e5e7eb;
+    }
+    .navbar-custom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #020617, #1e293b);
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.35);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .navbar-left img { width: 75px; height: 65px; border-radius: 8px; }
+    .navbar-center { text-align: center; font-weight: 700; font-size: 1rem; }
+    .navbar-right a {
+      color: #e0e7ff;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 999px;
+      margin-left: 8px;
+    }
+    .navbar-right a:hover { background: rgba(59,130,246,0.2); color: #fff; }
+    .otp-card {
+      border-radius: 16px;
+      border: 1px solid rgba(59,130,246,0.35);
+      background: linear-gradient(135deg, #020617, #111827);
+      box-shadow: 0 0 25px rgba(59,130,246,0.35);
+    }
+    .otp-input {
+      background: #020617;
+      border: 1px solid rgba(59,130,246,0.4);
+      color: #e5e7eb;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1.3rem;
+      letter-spacing: .35em;
+      padding-right: 2.5rem;
+      font-weight: 700;
+    }
+    .otp-input:focus {
+      background: #020617;
+      color: #fff;
+      border-color: #60a5fa;
+      box-shadow: 0 0 10px rgba(96,165,250,0.45);
+    }
+    .btn-primary {
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      font-weight: 700;
+    }
+    .btn-outline-light {
+      border-radius: 999px;
+    }
+    .btn-loading {
+      pointer-events: none;
+      opacity: .85;
+      position: relative;
+    }
+    .btn-loading::after {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+    </style>
+</head>
+<body>
+  <div class="navbar-custom">
+    <div class="navbar-left">
+      <img src="/media/logo.png" alt="MentorConnect Logo">
+    </div>
+    <div class="navbar-center">
+      MentorConnect OTP Verification
+    </div>
+    <div class="navbar-right">
+      <a href="{% url 'register1' %}">Back to Register</a>
+      <a href="{% url 'home' %}">Home</a>
+    </div>
+  </div>
+
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="otp-card p-4">
+          <h4 class="fw-bold text-center mb-2">Verify Your OTP</h4>
+          <p class="text-center text-secondary mb-4">
+            Enter the {{ otp_digits }}-digit OTP sent to <strong>{{ email_hint }}</strong>
+          </p>
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form id="verifyOtpForm" method="post" class="mb-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="verify">
+            <div class="mb-3 position-relative">
+              <input id="otpInput" name="otp" type="password" inputmode="numeric" pattern="[0-9]*"
+                     maxlength="{{ otp_digits }}" class="form-control otp-input" required autocomplete="one-time-code">
+              <i class="fa fa-eye position-absolute" id="toggleOtp" style="right:12px;top:50%;transform:translateY(-50%);cursor:pointer;"></i>
+            </div>
+            <button id="verifyBtn" type="submit" class="btn btn-primary w-100">Verify and Login</button>
+          </form>
+
+          <form id="resendOtpForm" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="resend">
+            <button id="resendBtn" type="submit" class="btn btn-outline-light w-100">Resend OTP</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("toggleOtp").addEventListener("click", function () {
+      const otp = document.getElementById("otpInput");
+      if (otp.type === "password") {
+        otp.type = "text";
+        this.classList.remove("fa-eye");
+        this.classList.add("fa-eye-slash");
+      } else {
+        otp.type = "password";
+        this.classList.remove("fa-eye-slash");
+        this.classList.add("fa-eye");
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const verifyForm = document.getElementById("verifyOtpForm");
+      const resendForm = document.getElementById("resendOtpForm");
+      const verifyBtn = document.getElementById("verifyBtn");
+      const resendBtn = document.getElementById("resendBtn");
+      let verifySubmitting = false;
+      let resendSubmitting = false;
+
+      verifyForm.addEventListener("submit", function (e) {
+        if (verifySubmitting) {
+          e.preventDefault();
+          return;
+        }
+        verifySubmitting = true;
+        verifyBtn.disabled = true;
+        verifyBtn.classList.add("btn-loading");
+        verifyBtn.innerText = "Verifying...";
+      });
+
+      resendForm.addEventListener("submit", function (e) {
+        if (resendSubmitting) {
+          e.preventDefault();
+          return;
+        }
+        resendSubmitting = true;
+        resendBtn.disabled = true;
+        resendBtn.classList.add("btn-loading");
+        resendBtn.innerText = "Sending...";
+      });
+    });
+  </script>
+</body>
+</html>
