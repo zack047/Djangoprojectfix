@@ -318,6 +318,7 @@ def register1(request):
             user.is_mentor = True
             user.is_active = False
             user.save()
+            Mentor.objects.get_or_create(user=user)
 
             registered = True
             try:

@@ -267,6 +267,7 @@ def register(request):
             user.is_mentee = True
             user.is_active = False
             user.save()
+            Mentee.objects.get_or_create(user=user)
 
             registered = True
             try:
