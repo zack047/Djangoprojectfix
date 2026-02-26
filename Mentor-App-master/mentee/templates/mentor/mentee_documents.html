@@ -197,9 +197,16 @@
                                               {{ doc.name|default:doc.file.name }}
                                           </td>
                                           <td>
-                                              <a href="{{ doc.file.url }}" class="btn btn-outline-success btn-sm" target="_blank">
+                                              {% if doc.is_available %}
+                                              <a href="{{ doc.open_url }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                                  <i class="bi bi-eye me-1"></i> View
+                                              </a>
+                                              <a href="{{ doc.download_url }}" class="btn btn-outline-success btn-sm" target="_blank">
                                                   <i class="bi bi-download me-1"></i> Download
                                               </a>
+                                              {% else %}
+                                              <span class="badge bg-danger">Missing on server</span>
+                                              {% endif %}
                                           </td>
                                         </tr>
                                         {% endfor %}
@@ -330,3 +337,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 {% endblock %}
+
+
+
+

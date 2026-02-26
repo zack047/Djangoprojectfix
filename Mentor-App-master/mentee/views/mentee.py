@@ -13,7 +13,7 @@ from ..forms import (MenteeRegisterForm, ProfileUpdateForm, InternshipPBLForm, P
 from ..models import (Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent, OtherEvent,
                       CertificationCourse, PaperPublication, SelfAssessment, LongTermGoal, SubjectOfInterest,
                       EducationalDetail, SemesterResult, Meeting, Mentor, Mentee, StudentInterest, Query,
-                      MentorMenteeInteraction, StudentProfileOverview, Notification)
+                      MentorMenteeInteraction, MentorMentee, StudentProfileOverview, Notification)
 from ..utils import compute_profile_completeness, mentee_required
 from ..auth_otp import (
     REG_MENTEE_OTP_SESSION_KEY,
@@ -23,6 +23,8 @@ from ..auth_otp import (
     mask_email,
     verify_login_otp as verify_login_otp_code,
 )
+from ..certificate_verification import apply_course_certificate_verification
+
 from django.contrib.auth import get_user_model
 import logging
 logger = logging.getLogger(__name__)
@@ -40,7 +42,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.db.models import Count, Q
 from ..render import Render
-from django.http import HttpResponse, Http404, JsonResponse, HttpResponseForbidden
+from django.http import HttpResponse, Http404, JsonResponse, HttpResponseForbidden, FileResponse
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.views.decorators.http import require_POST
@@ -670,6 +672,55 @@ def internship_pbl_list(request, pk=None):
     })
 
 
+
+@login_required
+def open_document(request, doc_type, pk):
+    model_map = {
+        "internship": (InternshipPBL, "certificate"),
+        "sports": (SportsCulturalEvent, "certificate"),
+        "other": (OtherEvent, "certificate"),
+        "course": (CertificationCourse, "certificate"),
+        "publication": (PaperPublication, "certificate"),
+        "semester": (SemesterResult, "marksheet"),
+    }
+
+    if doc_type not in model_map:
+        raise Http404("Invalid document type")
+
+    model_cls, field_name = model_map[doc_type]
+    record = get_object_or_404(model_cls, pk=pk)
+
+    owner = getattr(record, "user", None)
+    if owner is None:
+        raise Http404("Document owner not found")
+
+    allowed = False
+    if request.user.is_staff or request.user.is_superuser:
+        allowed = True
+    elif owner == request.user:
+        allowed = True
+    elif getattr(request.user, "is_mentor", False):
+        allowed = MentorMentee.objects.filter(mentor__user=request.user, mentee__user=owner).exists()
+
+    if not allowed:
+        return HttpResponseForbidden("You are not allowed to access this document")
+
+    file_field = getattr(record, field_name, None)
+    if not file_field:
+        raise Http404("File not attached")
+
+    try:
+        file_path = file_field.path
+    except Exception:
+        raise Http404("Could not resolve file path")
+
+    if not file_path or not os.path.exists(file_path):
+        raise Http404("Could not find file on server")
+
+    as_download = request.GET.get("download") == "1"
+    filename = os.path.basename(file_field.name)
+    return FileResponse(open(file_path, "rb"), as_attachment=as_download, filename=filename)
+
 #download internship certificate
 @login_required
 @mentee_required
@@ -1009,9 +1060,18 @@ def certification_list(request, pk=None):
             form = CertificationCourseForm(request.POST, request.FILES)
 
         if form.is_valid():
+            uploaded_new_certificate = bool(request.FILES.get("certificate"))
             new_cert = form.save(commit=False)
             new_cert.user = request.user
             new_cert.save()
+
+            if uploaded_new_certificate or new_cert.verification_status == "pending":
+                apply_course_certificate_verification(new_cert, save=True)
+                if new_cert.verification_status == "verified":
+                    messages.success(request, "Certificate verification completed: Verified")
+                else:
+                    messages.warning(request, "Certificate verification completed: Unverified. Please check QR/data.")
+
             return redirect("certifications")
 
     return render(request, "menti/certifications.html", {
@@ -2418,3 +2478,9 @@ def public_portfolio_view(request, slug):
     }
     return render(request, "menti/student_profile_public.html", context)
 #--------------------Profile Overview logic ends-----------------------
+
+
+
+
+
+

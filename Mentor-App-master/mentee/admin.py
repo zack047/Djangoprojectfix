@@ -1,12 +1,14 @@
 from django.contrib import admin
 from .models import (Mentee, Mentor, Profile, Msg, Conversation, Reply, InternshipPBL, Project, SportsCulturalEvent,
-                     OtherEvent, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest, SemesterResult,
+                     OtherEvent, CertificationCourse, LongTermGoal, EducationalDetail, Meeting, MenteeAdmin, StudentInterest, SemesterResult,
                      MentorMenteeInteraction, ActivityLog, WeeklyAgenda)
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+from .certificate_verification import apply_course_certificate_verification
 
 
 @admin.register(InternshipPBL)
@@ -42,6 +44,37 @@ class OtherEventAdmin(admin.ModelAdmin):
     ordering = ("-uploaded_at",)
 
 
+
+@admin.register(CertificationCourse)
+class CertificationCourseAdmin(admin.ModelAdmin):
+    list_display = (
+        "user", "title", "certifying_authority", "verification_status",
+        "qr_detected", "qr_url_accessible", "verification_checked_at", "uploaded_at"
+    )
+    search_fields = ("title", "certifying_authority", "user__username")
+    list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester")
+    readonly_fields = ("qr_payload", "verification_notes", "verification_checked_at")
+    ordering = ("-uploaded_at",)
+    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification")
+
+    @admin.action(description="Mark selected as manually verified")
+    def mark_verified(self, request, queryset):
+        updated = queryset.update(verification_status="manual_verified", verification_checked_at=timezone.now())
+        self.message_user(request, f"{updated} certificate(s) marked verified.")
+
+    @admin.action(description="Mark selected as unverified")
+    def mark_unverified(self, request, queryset):
+        updated = queryset.update(verification_status="unverified", verification_checked_at=timezone.now())
+        self.message_user(request, f"{updated} certificate(s) marked unverified.")
+
+    @admin.action(description="Re-run automatic QR verification")
+    def rerun_qr_verification(self, request, queryset):
+        count = 0
+        for item in queryset:
+            if item.certificate:
+                apply_course_certificate_verification(item, save=True)
+                count += 1
+        self.message_user(request, f"Automatic verification re-run for {count} certificate(s).")
 @admin.register(LongTermGoal)
 class LongTermGoalAdmin(admin.ModelAdmin):
     list_display = ("user", "plan", "reason", "created_at")
@@ -205,3 +238,6 @@ class WeeklyAgendaAdmin(admin.ModelAdmin):
     list_display = ('id', 'date', 'academic_year', 'week', 'year', 'sem', 'created_by', 'created_at', 'updated_at')
     list_filter = ('academic_year', 'week', 'year', 'sem', 'created_by')
     search_fields = ('academic_year', 'week', 'year', 'sem')
+
+
+

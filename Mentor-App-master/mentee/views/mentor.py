@@ -570,15 +570,28 @@ def mentee_documents(request):
                 error = "Selected Moodle ID is not one of your mentees."
             else:
                 # Helper
-                def add_doc(owner_moodle, owner_name, file, label, dtype):
-                    if file:
-                        documents.append({
-                            "owner_moodle": owner_moodle,
-                            "owner_name": owner_name,
-                            "name": label,
-                            "file": file,
-                            "type": dtype,
-                        })
+                def add_doc(owner_moodle, owner_name, file, label, dtype, dtype_key, obj_id):
+                    if not file:
+                        return
+
+                    is_available = True
+                    try:
+                        fs_path = file.path
+                        is_available = bool(fs_path and os.path.exists(fs_path))
+                    except Exception:
+                        is_available = False
+
+                    open_url = reverse("open_document", kwargs={"doc_type": dtype_key, "pk": obj_id})
+                    documents.append({
+                        "owner_moodle": owner_moodle,
+                        "owner_name": owner_name,
+                        "name": label,
+                        "file": file,
+                        "type": dtype,
+                        "open_url": open_url,
+                        "download_url": f"{open_url}?download=1",
+                        "is_available": is_available,
+                    })
 
                 # Build docs for each selected mentee
                 for moodle_id in selected_moodles:
@@ -592,27 +605,27 @@ def mentee_documents(request):
 
                     for item in InternshipPBL.objects.filter(user=mentee_user):
                         add_doc(moodle_id, mentee_name, item.certificate,
-                                item.title or "Internship / PBL Certificate", "Internship / PBL")
+                                item.title or "Internship / PBL Certificate", "Internship / PBL", "internship", item.pk)
 
                     for item in SportsCulturalEvent.objects.filter(user=mentee_user):
                         add_doc(moodle_id, mentee_name, item.certificate,
-                                item.name_of_event or "Sports / Cultural Event", "Sports / Cultural")
+                                item.name_of_event or "Sports / Cultural Event", "Sports / Cultural", "sports", item.pk)
 
                     for item in OtherEvent.objects.filter(user=mentee_user):
                         add_doc(moodle_id, mentee_name, item.certificate,
-                                item.name_of_event or "Other Event", "Other Event")
+                                item.name_of_event or "Other Event", "Other Event", "other", item.pk)
 
                     for item in CertificationCourse.objects.filter(user=mentee_user):
                         add_doc(moodle_id, mentee_name, item.certificate,
-                                item.title or "Certification Course", "Course")
+                                item.title or "Certification Course", "Course", "course", item.pk)
 
                     for item in PaperPublication.objects.filter(user=mentee_user):
                         add_doc(moodle_id, mentee_name, item.certificate,
-                                item.title or "Paper Publication", "Publication")
+                                item.title or "Paper Publication", "Publication", "publication", item.pk)
 
                     for item in SemesterResult.objects.filter(user=mentee_user):
                         add_doc(moodle_id, mentee_name, item.marksheet,
-                                f"Semester {item.semester} Marksheet", "Semester Result")
+                                f"Semester {item.semester} Marksheet", "Semester Result", "semester", item.pk)
 
                 # Optional: stable ordering (group by mentee then type then name)
                 documents.sort(key=lambda d: (d["owner_moodle"], d["type"], (d["name"] or "")))
@@ -4190,3 +4203,4 @@ def weekly_agenda_page(request):
     }
     return render(request, "mentor/weekly_agenda.html", context)
 #----------------------Agenda page logic ends---------------------
+

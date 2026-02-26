@@ -65,6 +65,7 @@ urlpatterns = [
     path("student-interests/", mentee.student_interests, name="student_interests"),
     path("uploaded-documents/", mentee.uploaded_documents, name="uploaded_documents"),
     path("uploaded-documents/download-all/", mentee.download_all_uploaded_documents_aggregated, name="download_all_uploaded_documents"),
+    path("documents/<str:doc_type>/<int:pk>/", mentee.open_document, name="open_document"),
     path("credits/", mentee.credits_view, name="credits"),
     path('message-module/', mentee.MessageView.as_view(), name="module-message"),
     #path('message-module/', mentee.messege_view, name="module-message"),
