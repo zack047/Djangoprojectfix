@@ -375,10 +375,8 @@ def verify_register_otp(request):
         if is_valid:
             verified_user.is_active = True
             verified_user.save(update_fields=["is_active"])
-            login(request, verified_user)
-            request.session.set_expiry(settings.SESSION_COOKIE_AGE)
-            messages.success(request, "Registration verified. You are now logged in.")
-            return HttpResponseRedirect(reverse("mentee-home"))
+            messages.success(request, "Account created successfully. Please log in.")
+            return render(request, "menti/register_success.html", {"login_url": reverse("login"), "is_mentor_view": False})
 
         if reason == "expired":
             messages.error(request, "OTP expired. Please register again.")
@@ -2478,6 +2476,9 @@ def public_portfolio_view(request, slug):
     }
     return render(request, "menti/student_profile_public.html", context)
 #--------------------Profile Overview logic ends-----------------------
+
+
+
 
 
 

@@ -449,10 +449,8 @@ def verify_register_otp(request):
         if is_valid:
             verified_user.is_active = True
             verified_user.save(update_fields=["is_active"])
-            login(request, verified_user)
-            request.session.set_expiry(settings.SESSION_COOKIE_AGE)
-            messages.success(request, "Registration verified. You are now logged in.")
-            return HttpResponseRedirect(reverse("account1"))
+            messages.success(request, "Account created successfully. Please log in.")
+            return render(request, "mentor/register_success.html", {"login_url": reverse("login1")})
 
         if reason == "expired":
             messages.error(request, "OTP expired. Please register again.")
@@ -4203,4 +4201,7 @@ def weekly_agenda_page(request):
     }
     return render(request, "mentor/weekly_agenda.html", context)
 #----------------------Agenda page logic ends---------------------
+
+
+
 
