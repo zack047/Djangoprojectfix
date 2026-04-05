@@ -55,17 +55,17 @@ class CertificationCourseAdmin(admin.ModelAdmin):
     list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester")
     readonly_fields = ("qr_payload", "verification_notes", "verification_checked_at")
     ordering = ("-uploaded_at",)
-    actions = ("mark_verified", "mark_unverified", "rerun_qr_verification")
+    actions = ("mark_verified", "mark_verify_physically", "rerun_qr_verification")
 
     @admin.action(description="Mark selected as manually verified")
     def mark_verified(self, request, queryset):
-        updated = queryset.update(verification_status="manual_verified", verification_checked_at=timezone.now())
+        updated = queryset.update(verification_status="verified", verification_checked_at=timezone.now())
         self.message_user(request, f"{updated} certificate(s) marked verified.")
 
-    @admin.action(description="Mark selected as unverified")
-    def mark_unverified(self, request, queryset):
-        updated = queryset.update(verification_status="unverified", verification_checked_at=timezone.now())
-        self.message_user(request, f"{updated} certificate(s) marked unverified.")
+    @admin.action(description="Mark selected for physical verification")
+    def mark_verify_physically(self, request, queryset):
+        updated = queryset.update(verification_status="verify_physically", verification_checked_at=timezone.now())
+        self.message_user(request, f"{updated} certificate(s) marked as verify physically.")
 
     @admin.action(description="Re-run automatic QR verification")
     def rerun_qr_verification(self, request, queryset):

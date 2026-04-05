@@ -40,6 +40,26 @@ def _token_match_ratio(source_text: str, expected_text: str) -> float:
     return matched / max(len(expected), 1)
 
 
+def _name_match_ok(source_text: str, expected_name: str) -> bool:
+    expected_tokens = _tokens(expected_name)
+    if not expected_tokens:
+        return False
+
+    source_set = set(_tokens(source_text))
+    matched_count = sum(1 for t in expected_tokens if t in source_set)
+    ratio = matched_count / max(len(expected_tokens), 1)
+
+    # Accept partial-name matches when at least two meaningful name tokens match.
+    if matched_count >= min(2, len(expected_tokens)) and ratio >= 0.5:
+        return True
+
+    # For short names, require all meaningful tokens to match.
+    if len(expected_tokens) <= 2 and matched_count == len(expected_tokens):
+        return True
+
+    return ratio >= 0.7
+
+
 def _extract_pdf_text(file_path: str) -> str:
     if not PdfReader:
         return ""
@@ -177,7 +197,7 @@ def _extract_urls_from_text(text: str):
     return re.findall(r"https?://[^\s)\]>]+", text or "", flags=re.IGNORECASE)
 def verify_course_certificate(course):
     result = {
-        "verification_status": "unverified",
+        "verification_status": "verify_physically",
         "verification_notes": "",
         "verification_checked_at": timezone.now(),
         "qr_detected": False,
@@ -257,23 +277,29 @@ def verify_course_certificate(course):
         notes.append("No QR code detected in first pages of certificate")
 
     name_required = bool(profile_name)
-    name_ok = name_ratio >= 0.45
+    name_ok = _name_match_ok(full_text, expected_name) if expected_name else False
     title_ok = title_ratio >= 0.45 if title else True
     authority_ok = authority_ratio >= 0.45 if authority else True
 
-    if qr_valid and title_ok and authority_ok and (name_ok or not name_required):
+    strong_text_match = (name_ok or not name_required) and title_ok and authority_ok
+
+    if (qr_valid and strong_text_match) or (strong_text_match and name_ratio >= 0.5):
         result["verification_status"] = "verified"
-        notes.append("Certificate verified by QR and content match")
+        if qr_valid:
+            notes.append("Certificate verified by QR and content match")
+        else:
+            notes.append("Certificate verified by strong content match")
     else:
-        result["verification_status"] = "unverified"
+        result["verification_status"] = "verify_physically"
         if name_required and not name_ok:
-            notes.append("Student name does not strongly match certificate text")
+            notes.append("Student name does not match certificate text strongly enough")
         if not name_required:
             notes.append("Profile student name missing; strict name check skipped")
         if not title_ok:
             notes.append("Course title does not strongly match certificate text")
         if not authority_ok:
             notes.append("Certifying authority does not strongly match certificate text")
+        notes.append("Automatic verification not conclusive; physical verification required")
 
     result["verification_notes"] = " | ".join(notes)[:2000]
     return result

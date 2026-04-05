@@ -322,10 +322,8 @@ class OtherEvent(models.Model):
 
 class CertificationCourse(models.Model):
     VERIFICATION_STATUS_CHOICES = [
-        ("pending", "Pending"),
         ("verified", "Verified"),
-        ("unverified", "Unverified"),
-        ("manual_verified", "Manual Verified"),
+        ("verify_physically", "Verify Physically"),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
@@ -342,7 +340,7 @@ class CertificationCourse(models.Model):
     level = models.CharField(max_length=20, blank=True, null=True)
     amount_reimbursed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     certificate = models.FileField(upload_to="certificates/courses/", blank=True, null=True)
-    verification_status = models.CharField(max_length=20, choices=VERIFICATION_STATUS_CHOICES, default="pending")
+    verification_status = models.CharField(max_length=20, choices=VERIFICATION_STATUS_CHOICES, default="verify_physically")
     verification_notes = models.TextField(blank=True, null=True)
     verification_checked_at = models.DateTimeField(blank=True, null=True)
     qr_detected = models.BooleanField(default=False)

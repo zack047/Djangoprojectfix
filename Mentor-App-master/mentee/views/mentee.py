@@ -1063,12 +1063,12 @@ def certification_list(request, pk=None):
             new_cert.user = request.user
             new_cert.save()
 
-            if uploaded_new_certificate or new_cert.verification_status == "pending":
+            if uploaded_new_certificate or new_cert.verification_status != "verified":
                 apply_course_certificate_verification(new_cert, save=True)
                 if new_cert.verification_status == "verified":
                     messages.success(request, "Certificate verification completed: Verified")
                 else:
-                    messages.warning(request, "Certificate verification completed: Unverified. Please check QR/data.")
+                    messages.warning(request, "Certificate verification completed: Verify Physically.")
 
             return redirect("certifications")
 

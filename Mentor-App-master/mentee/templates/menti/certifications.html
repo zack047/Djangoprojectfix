@@ -79,12 +79,10 @@
                                 <td class="text-center">{{ item.level }}</td>
                                 <td class="text-center">{{ item.amount_reimbursed }}</td>
                                 <td class="text-center">
-                                    {% if item.verification_status == "verified" or item.verification_status == "manual_verified" %}
+                                    {% if item.verification_status == "verified" %}
                                         <span class="badge bg-success">Verified</span>
-                                    {% elif item.verification_status == "unverified" %}
-                                        <span class="badge bg-danger">Unverified</span>
                                     {% else %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        <span class="badge bg-danger">Verify Physically</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
