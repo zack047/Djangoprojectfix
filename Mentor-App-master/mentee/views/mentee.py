@@ -583,13 +583,37 @@ def profile(request):
     user = request.user
 
     if request.method == 'POST':
+        old_student_name = (profile.student_name or "").strip()
         form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
             profile = form.save(commit=False)
-            # 🔑 Update User.email explicitly
+            # ?? Update User.email explicitly
             user.email = form.cleaned_data['email']
             user.save()
             profile.save()
+
+            new_student_name = (profile.student_name or "").strip()
+            old_norm = " ".join(old_student_name.lower().split())
+            new_norm = " ".join(new_student_name.lower().split())
+            if old_norm and new_norm and old_norm != new_norm:
+                verified_certs = CertificationCourse.objects.filter(user=request.user, verification_status="verified")
+                invalidated_count = 0
+                reason = "Name is edited after verifying this certificate"
+                for cert in verified_certs:
+                    prior_notes = (cert.verification_notes or "").strip()
+                    if reason not in prior_notes:
+                        cert.verification_notes = f"{prior_notes} | {reason}" if prior_notes else reason
+                    cert.verification_status = "verify_physically"
+                    cert.verification_checked_at = timezone.now()
+                    cert.save(update_fields=["verification_status", "verification_notes", "verification_checked_at"])
+                    invalidated_count += 1
+
+                if invalidated_count:
+                    messages.warning(
+                        request,
+                        f"{invalidated_count} verified certificate(s) moved to Verify Physically because student name was changed.",
+                    )
+
             messages.success(request, 'Profile updated successfully.')
             return redirect('profile')
     else:

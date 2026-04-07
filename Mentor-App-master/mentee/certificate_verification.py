@@ -24,7 +24,14 @@ except Exception:
 
 
 def _normalize(text: str) -> str:
-    return re.sub(r"\s+", " ", (text or "").lower()).strip()
+    base = (text or "")
+    # OCR/extracted text can split acronyms like "A W S"; compact them first.
+    base = re.sub(
+        r"\b(?:[A-Za-z]\s+){2,}[A-Za-z]\b",
+        lambda m: re.sub(r"\s+", "", m.group(0)),
+        base,
+    )
+    return re.sub(r"\s+", " ", base.lower()).strip()
 
 
 def _tokens(text: str):
@@ -35,8 +42,22 @@ def _token_match_ratio(source_text: str, expected_text: str) -> float:
     expected = _tokens(expected_text)
     if not expected:
         return 0.0
-    source_set = set(_tokens(source_text))
-    matched = sum(1 for t in expected if t in source_set)
+
+    source_tokens = _tokens(source_text)
+    source_set = set(source_tokens)
+    source_compact = re.sub(r"[^a-z0-9]+", "", (source_text or "").lower())
+
+    def _is_matched(token: str) -> bool:
+        if token in source_set:
+            return True
+        if len(token) >= 4 and token in source_compact:
+            return True
+        for src in source_tokens:
+            if len(token) >= 4 and len(src) >= 4 and (token in src or src in token):
+                return True
+        return False
+
+    matched = sum(1 for t in expected if _is_matched(t))
     return matched / max(len(expected), 1)
 
 
@@ -53,7 +74,11 @@ def _name_match_ok(source_text: str, expected_name: str) -> bool:
     if matched_count >= min(2, len(expected_tokens)) and ratio >= 0.5:
         return True
 
-    # For short names, require all meaningful tokens to match.
+    # For 2-part names, allow first-name-only certificates when other checks pass.
+    if len(expected_tokens) == 2 and matched_count >= 1 and ratio >= 0.5:
+        return True
+
+    # For very short names (1 token), require full match.
     if len(expected_tokens) <= 2 and matched_count == len(expected_tokens):
         return True
 
