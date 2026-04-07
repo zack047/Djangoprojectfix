@@ -364,10 +364,13 @@ def verify_course_certificate(course):
     title_ok = title_ratio >= 0.45 if title else True
     authority_ok = authority_ratio >= 0.45 if authority else True
     profile_ready = bool(profile_name and profile_moodle_id)
+    has_verification_reference = bool(qr_payloads)
     strong_text_match = name_ok and title_ok and authority_ok
     qr_name_match = qr_valid and name_ok
 
-    if profile_ready and (qr_name_match or strong_text_match or (name_ok and title_ratio >= 0.4 and authority_ratio >= 0.35)):
+    if profile_ready and has_verification_reference and (
+        qr_name_match or strong_text_match or (name_ok and title_ratio >= 0.4 and authority_ratio >= 0.35)
+    ):
         result["verification_status"] = "verified"
         if qr_name_match:
             notes.append("Certificate verified by QR and student-name match")
@@ -381,6 +384,8 @@ def verify_course_certificate(course):
             notes.append("Certificate verified by strong content match")
     else:
         result["verification_status"] = "verify_physically"
+        if not has_verification_reference:
+            notes.append("No QR or URL found for verification")
         if not profile_name:
             notes.append("Profile student name is missing")
         if not profile_moodle_id:
