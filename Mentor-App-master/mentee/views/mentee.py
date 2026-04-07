@@ -1059,6 +1059,30 @@ def certification_list(request, pk=None):
 
         if form.is_valid():
             uploaded_new_certificate = bool(request.FILES.get("certificate"))
+            profile = getattr(request.user, "profile", None)
+            profile_name = (getattr(profile, "student_name", "") or "").strip()
+            profile_moodle_id = (getattr(profile, "moodle_id", "") or "").strip()
+            missing_profile_fields = []
+            if not profile_name:
+                missing_profile_fields.append("Student Name")
+            if not profile_moodle_id:
+                missing_profile_fields.append("Moodle ID")
+
+            if uploaded_new_certificate and missing_profile_fields:
+                missing_text = ", ".join(missing_profile_fields)
+                messages.error(
+                    request,
+                    f"Please complete your profile before uploading certificate. Missing: {missing_text}.",
+                )
+                messages.info(request, "Open Profile and fill Student Name and Moodle ID, then upload again.")
+                return render(request, "menti/certifications.html", {
+                    "certifications": certifications,
+                    "form": form,
+                    "editing": editing,
+                    "edit_id": edit_id,
+                    "is_mentor_view": False,
+                })
+
             new_cert = form.save(commit=False)
             new_cert.user = request.user
             new_cert.save()
@@ -1068,7 +1092,11 @@ def certification_list(request, pk=None):
                 if new_cert.verification_status == "verified":
                     messages.success(request, "Certificate verification completed: Verified")
                 else:
-                    messages.warning(request, "Certificate verification completed: Verify Physically.")
+                    reason = (new_cert.verification_notes or "").replace(" | ", "; ").strip()
+                    if reason:
+                        messages.warning(request, f"Certificate verification completed: Verify Physically. Reason: {reason}")
+                    else:
+                        messages.warning(request, "Certificate verification completed: Verify Physically.")
 
             return redirect("certifications")
 

@@ -84,6 +84,53 @@ def _extract_qr_payloads_from_pdf(file_path: str, max_pages: int = 3):
     payloads = []
     detector = cv2.QRCodeDetector()
 
+    def _decode_from_image(img):
+        decoded = []
+        variants = [img]
+        gray = None
+        if len(img.shape) == 3:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            variants.append(gray)
+        else:
+            gray = img
+
+        try:
+            variants.append(cv2.equalizeHist(gray))
+        except Exception:
+            pass
+        try:
+            variants.append(cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 41, 11))
+        except Exception:
+            pass
+        try:
+            variants.append(cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1])
+        except Exception:
+            pass
+        try:
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+            variants.append(cv2.dilate(gray, kernel, iterations=1))
+        except Exception:
+            pass
+
+        for variant in variants:
+            try:
+                ok, infos, _, _ = detector.detectAndDecodeMulti(variant)
+                if ok and infos:
+                    for info in infos:
+                        if info and info.strip():
+                            decoded.append(info.strip())
+            except Exception:
+                pass
+
+            try:
+                single_info, _, _ = detector.detectAndDecode(variant)
+                if single_info and single_info.strip():
+                    decoded.append(single_info.strip())
+            except Exception:
+                pass
+
+        return decoded
+
     try:
         doc = pdfium.PdfDocument(file_path)
     except Exception as exc:
@@ -91,31 +138,21 @@ def _extract_qr_payloads_from_pdf(file_path: str, max_pages: int = 3):
 
     try:
         total_pages = min(len(doc), max_pages)
+        scales = (2, 3, 4)
         for page_index in range(total_pages):
-            page = doc[page_index]
-            bmp = page.render(scale=2)
-            img = bmp.to_numpy()
-            if img is None:
-                continue
+            for scale in scales:
+                page = doc[page_index]
+                bmp = page.render(scale=scale)
+                img = bmp.to_numpy()
+                if img is None:
+                    continue
 
-            if len(img.shape) == 3 and img.shape[2] == 4:
-                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+                if len(img.shape) == 3 and img.shape[2] == 4:
+                    img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
 
-            try:
-                ok, infos, _, _ = detector.detectAndDecodeMulti(img)
-                if ok and infos:
-                    for info in infos:
-                        if info and info.strip():
-                            payloads.append(info.strip())
-            except Exception:
-                pass
-
-            try:
-                single_info, _, _ = detector.detectAndDecode(img)
-                if single_info and single_info.strip():
-                    payloads.append(single_info.strip())
-            except Exception:
-                pass
+                decoded_items = _decode_from_image(img)
+                if decoded_items:
+                    payloads.extend(decoded_items)
     finally:
         doc.close()
 
@@ -177,9 +214,26 @@ def _validate_qr_payload(payload: str, expected_name: str, expected_title: str, 
         title_ratio = _token_match_ratio(page_text, expected_title)
         authority_ratio = _token_match_ratio(page_text, expected_authority)
 
-        looks_valid = name_ratio >= 0.45 or (title_ratio >= 0.45 and authority_ratio >= 0.45)
+        parsed = urlparse(payload)
+        host = (parsed.netloc or "").lower()
+        path_and_query = f"{parsed.path or ''} {parsed.query or ''}".lower()
+        verification_endpoint_hint = any(
+            token in path_and_query for token in ("verify", "cert", "certificate", "credential", "token", "id=")
+        )
+        trusted_host_hint = any(
+            token in host for token in ("eduskillsfoundation.org", "cognitiveclass.ai", "coursera.org", "udemy.com")
+        )
+
+        looks_valid = (
+            name_ratio >= 0.45
+            or (title_ratio >= 0.45 and authority_ratio >= 0.45)
+            or verification_endpoint_hint
+            or trusted_host_hint
+        )
         note = "QR URL reachable"
-        if looks_valid:
+        if looks_valid and (verification_endpoint_hint or trusted_host_hint):
+            note += "; certificate verification URL pattern matched"
+        elif looks_valid:
             note += "; matched credential metadata"
         else:
             note += "; no strong metadata match"
@@ -223,12 +277,15 @@ def verify_course_certificate(course):
     full_text = _normalize(_extract_pdf_text(file_path))
     expected_name = ""
     profile_name = ""
+    profile_moodle_id = ""
     if course.user:
         try:
             profile_name = (course.user.profile.student_name or "").strip()
+            profile_moodle_id = (course.user.profile.moodle_id or "").strip()
         except Exception:
             profile_name = ""
-        expected_name = profile_name or (course.user.username or "")
+            profile_moodle_id = ""
+        expected_name = profile_name
 
     title = (course.title or "").strip()
     authority = (course.certifying_authority or "").strip()
@@ -252,10 +309,11 @@ def verify_course_certificate(course):
         result["qr_payload"] = "\n".join(qr_payloads[:5])
 
     notes = []
+    diagnostics = []
     qr_valid = False
 
     if qr_error:
-        notes.append(qr_error)
+        diagnostics.append(qr_error)
 
     if qr_payloads:
         for payload in qr_payloads[:3]:
@@ -269,36 +327,49 @@ def verify_course_certificate(course):
                 result["qr_url_checked"] = True
             if url_accessible:
                 result["qr_url_accessible"] = True
-            notes.append(reason)
+            diagnostics.append(reason)
             if is_valid:
                 qr_valid = True
                 break
     else:
-        notes.append("No QR code detected in first pages of certificate")
+        diagnostics.append("No QR code detected in first pages of certificate")
 
     name_required = bool(profile_name)
     name_ok = _name_match_ok(full_text, expected_name) if expected_name else False
     title_ok = title_ratio >= 0.45 if title else True
     authority_ok = authority_ratio >= 0.45 if authority else True
+    profile_ready = bool(profile_name and profile_moodle_id)
+    strong_text_match = name_ok and title_ok and authority_ok
+    qr_name_match = qr_valid and name_ok
 
-    strong_text_match = (name_ok or not name_required) and title_ok and authority_ok
-
-    if (qr_valid and strong_text_match) or (strong_text_match and name_ratio >= 0.5):
+    if profile_ready and (qr_name_match or strong_text_match or (name_ok and title_ratio >= 0.4 and authority_ratio >= 0.35)):
         result["verification_status"] = "verified"
-        if qr_valid:
+        if qr_name_match:
+            notes.append("Certificate verified by QR and student-name match")
+            if not title_ok:
+                notes.append("Note: course title text did not strongly match")
+            if not authority_ok:
+                notes.append("Note: certifying authority text did not strongly match")
+        elif qr_valid:
             notes.append("Certificate verified by QR and content match")
         else:
             notes.append("Certificate verified by strong content match")
     else:
         result["verification_status"] = "verify_physically"
+        if not profile_name:
+            notes.append("Profile student name is missing")
+        if not profile_moodle_id:
+            notes.append("Profile Moodle ID is missing")
         if name_required and not name_ok:
-            notes.append("Student name does not match certificate text strongly enough")
-        if not name_required:
-            notes.append("Profile student name missing; strict name check skipped")
+            notes.append("Student name on certificate does not match your profile name")
         if not title_ok:
-            notes.append("Course title does not strongly match certificate text")
+            notes.append("Course title on certificate does not match entered course title")
         if not authority_ok:
-            notes.append("Certifying authority does not strongly match certificate text")
+            notes.append("Certifying authority on certificate does not match entered authority")
+        if not qr_valid:
+            notes.append("QR/verification URL could not be validated automatically")
+        if not notes and diagnostics:
+            notes.append("Automatic checks were inconclusive")
         notes.append("Automatic verification not conclusive; physical verification required")
 
     result["verification_notes"] = " | ".join(notes)[:2000]

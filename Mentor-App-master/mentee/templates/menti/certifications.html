@@ -83,6 +83,11 @@
                                         <span class="badge bg-success">Verified</span>
                                     {% else %}
                                         <span class="badge bg-danger">Verify Physically</span>
+                                        {% if item.verification_notes %}
+                                            <div class="small text-danger mt-1" title="{{ item.verification_notes }}">
+                                                {{ item.verification_notes|truncatechars:120 }}
+                                            </div>
+                                        {% endif %}
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
