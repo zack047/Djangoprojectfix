@@ -58,6 +58,7 @@
                             <th class="text-center">Start Date</th>
                             <th class="text-center">End Date</th>
                             <th class="text-center">No. of Days</th>
+                            <th class="text-center">Verification</th>
                             <th class="text-center">Action</th>
                         </tr>
                     </thead>
@@ -76,6 +77,18 @@
                                 <td class="text-center">{{ item.end_date }}</td>
                                 <td class="text-center">{{ item.no_of_days }}</td>
                                 <td class="text-center">
+                                    {% if item.verification_status == "verified" %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Verify Physically</span>
+                                        {% if item.verification_notes %}
+                                            <div class="small text-danger mt-1" title="{{ item.verification_notes }}">
+                                                {{ item.verification_notes|truncatechars:120 }}
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
                                     {% if is_mentor_view == False %}
                                         {% if item.certificate %}
                                             <a href="{{ item.certificate.url }}" class="btn btn-primary btn-sm mt-1" target="_blank"><i class="bi bi-eye"></i></a>
@@ -93,7 +106,7 @@
                                 </td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="12" class="text-center">No records yet</td></tr>
+                            <tr><td colspan="13" class="text-center">No records yet</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

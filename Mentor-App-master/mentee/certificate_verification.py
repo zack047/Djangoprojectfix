@@ -274,7 +274,7 @@ def _validate_qr_payload(payload: str, expected_name: str, expected_title: str, 
 
 def _extract_urls_from_text(text: str):
     return re.findall(r"https?://[^\s)\]>]+", text or "", flags=re.IGNORECASE)
-def verify_course_certificate(course):
+def _verify_certificate_file(user, certificate_file, title: str, authority: str, title_label: str, authority_label: str):
     result = {
         "verification_status": "verify_physically",
         "verification_notes": "",
@@ -285,12 +285,12 @@ def verify_course_certificate(course):
         "qr_url_accessible": False,
     }
 
-    if not course.certificate:
+    if not certificate_file:
         result["verification_notes"] = "No certificate file uploaded"
         return result
 
     try:
-        file_path = course.certificate.path
+        file_path = certificate_file.path
     except Exception as exc:
         result["verification_notes"] = f"Could not resolve certificate path: {exc}"
         return result
@@ -303,17 +303,17 @@ def verify_course_certificate(course):
     expected_name = ""
     profile_name = ""
     profile_moodle_id = ""
-    if course.user:
+    if user:
         try:
-            profile_name = (course.user.profile.student_name or "").strip()
-            profile_moodle_id = (course.user.profile.moodle_id or "").strip()
+            profile_name = (user.profile.student_name or "").strip()
+            profile_moodle_id = (user.profile.moodle_id or "").strip()
         except Exception:
             profile_name = ""
             profile_moodle_id = ""
         expected_name = profile_name
 
-    title = (course.title or "").strip()
-    authority = (course.certifying_authority or "").strip()
+    title = (title or "").strip()
+    authority = (authority or "").strip()
 
     name_ratio = _token_match_ratio(full_text, expected_name)
     title_ratio = _token_match_ratio(full_text, title)
@@ -393,9 +393,9 @@ def verify_course_certificate(course):
         if name_required and not name_ok:
             notes.append("Student name on certificate does not match your profile name")
         if not title_ok:
-            notes.append("Course title on certificate does not match entered course title")
+            notes.append(f"{title_label} on certificate does not match entered {title_label.lower()}")
         if not authority_ok:
-            notes.append("Certifying authority on certificate does not match entered authority")
+            notes.append(f"{authority_label} on certificate does not match entered {authority_label.lower()}")
         if not qr_valid:
             notes.append("QR/verification URL could not be validated automatically")
         if not notes and diagnostics:
@@ -406,6 +406,17 @@ def verify_course_certificate(course):
     return result
 
 
+def verify_course_certificate(course):
+    return _verify_certificate_file(
+        user=course.user,
+        certificate_file=course.certificate,
+        title=course.title,
+        authority=course.certifying_authority,
+        title_label="Course title",
+        authority_label="Certifying authority",
+    )
+
+
 def apply_course_certificate_verification(course, save=True):
     data = verify_course_certificate(course)
     for key, value in data.items():
@@ -413,6 +424,37 @@ def apply_course_certificate_verification(course, save=True):
 
     if save:
         course.save(
+            update_fields=[
+                "verification_status",
+                "verification_notes",
+                "verification_checked_at",
+                "qr_detected",
+                "qr_payload",
+                "qr_url_checked",
+                "qr_url_accessible",
+            ]
+        )
+    return data
+
+
+def verify_internship_certificate(internship):
+    return _verify_certificate_file(
+        user=internship.user,
+        certificate_file=internship.certificate,
+        title=internship.title,
+        authority=internship.company_name,
+        title_label="Internship title",
+        authority_label="Company name",
+    )
+
+
+def apply_internship_certificate_verification(internship, save=True):
+    data = verify_internship_certificate(internship)
+    for key, value in data.items():
+        setattr(internship, key, value)
+
+    if save:
+        internship.save(
             update_fields=[
                 "verification_status",
                 "verification_notes",

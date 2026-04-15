@@ -183,6 +183,11 @@ class MentorMentee(models.Model):
 
 
 class InternshipPBL(models.Model):
+    VERIFICATION_STATUS_CHOICES = [
+        ("verified", "Verified"),
+        ("verify_physically", "Verify Physically"),
+    ]
+
     TYPE_CHOICES = [
         ("Internship in Industry", "Internship in Industry"),
         ("Internship through APSIT SKILLS Platform", "Internship through APSIT SKILLS Platform"),
@@ -203,6 +208,13 @@ class InternshipPBL(models.Model):
     end_date = models.DateField(blank=True, null=True)
     no_of_days = models.IntegerField(blank=True, null=True)
     certificate = models.FileField(upload_to="certificates/internships/", blank=True, null=True)
+    verification_status = models.CharField(max_length=20, choices=VERIFICATION_STATUS_CHOICES, default="verify_physically")
+    verification_notes = models.TextField(blank=True, null=True)
+    verification_checked_at = models.DateTimeField(blank=True, null=True)
+    qr_detected = models.BooleanField(default=False)
+    qr_payload = models.TextField(blank=True, null=True)
+    qr_url_checked = models.BooleanField(default=False)
+    qr_url_accessible = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def save(self, *args, **kwargs):

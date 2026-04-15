@@ -8,16 +8,39 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from .certificate_verification import apply_course_certificate_verification
+from .certificate_verification import apply_course_certificate_verification, apply_internship_certificate_verification
 
 
 @admin.register(InternshipPBL)
 class InternshipPBLAdmin(admin.ModelAdmin):
-    list_display = ("user", "title", "company_name", "academic_year", "semester", "start_date", "end_date", "no_of_days", "uploaded_at")
-    search_fields = ("title", "company_name", "user__username")  # 🔍 search filter
-    list_filter = ("user", "academic_year", "semester", "type")  # ✅ dropdown filters
-    ordering = ("-start_date",)  # ⬅️ latest internships first
-    readonly_fields = ("no_of_days",)  # prevent editing
+    list_display = (
+        "user", "title", "company_name", "verification_status",
+        "qr_detected", "qr_url_accessible", "academic_year", "semester", "start_date", "end_date", "no_of_days", "uploaded_at"
+    )
+    search_fields = ("title", "company_name", "user__username")
+    list_filter = ("verification_status", "qr_detected", "qr_url_accessible", "academic_year", "semester", "type")
+    ordering = ("-start_date",)
+    readonly_fields = ("no_of_days", "qr_payload", "verification_notes", "verification_checked_at")
+    actions = ("mark_verified", "mark_verify_physically", "rerun_qr_verification")
+
+    @admin.action(description="Mark selected as manually verified")
+    def mark_verified(self, request, queryset):
+        updated = queryset.update(verification_status="verified", verification_checked_at=timezone.now())
+        self.message_user(request, f"{updated} internship certificate(s) marked verified.")
+
+    @admin.action(description="Mark selected for physical verification")
+    def mark_verify_physically(self, request, queryset):
+        updated = queryset.update(verification_status="verify_physically", verification_checked_at=timezone.now())
+        self.message_user(request, f"{updated} internship certificate(s) marked as verify physically.")
+
+    @admin.action(description="Re-run automatic QR verification")
+    def rerun_qr_verification(self, request, queryset):
+        count = 0
+        for item in queryset:
+            if item.certificate:
+                apply_internship_certificate_verification(item, save=True)
+                count += 1
+        self.message_user(request, f"Automatic verification re-run for {count} internship certificate(s).")
 
 
 @admin.register(Project)
